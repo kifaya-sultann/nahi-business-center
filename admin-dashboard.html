@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin-dashboard.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <h2>Admin Panel</h2>
+        <nav>
+          <a href="#" class="nav-link active" data-page="dashboard"
+            >📊 Dashboard</a
+          >
+          <a href="#" class="nav-link" data-page="users">👥 Users</a>
+          <a href="#" class="nav-link" data-page="payments">💳 Payments</a>
+          <a href="#" class="nav-link" data-page="requests"
+            >📋 Requests
+            <span
+              class="nav-badge"
+              id="requestBadge"
+              style="display: none"
+            ></span
+          ></a>
+          <a href="#" class="nav-link" data-page="settings">⚙️ Settings</a>
+          <a href="#" id="logout">🚪 Logout</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main">
+        <!-- Dashboard -->
+        <section id="dashboard" class="page active">
+          <h1>Dashboard Overview</h1>
+          <div class="cards">
+            <div class="card">
+              <div class="card-label">👥 Total Users</div>
+              <div class="card-value" id="totalUsers">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">💰 Total Revenue</div>
+              <div class="card-value" id="totalRevenue">$0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">⚠️ Overdue Tenants</div>
+              <div class="card-value" id="overdueCount">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">📅 Due This Month</div>
+              <div class="card-value" id="dueThisMonth">0</div>
+            </div>
+          </div>
+
+          <!-- Recent Payments -->
+          <h2 style="margin-top: 30px; margin-bottom: 10px">Recent Payments</h2>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tenant</th>
+                  <th>Amount</th>
+                  <th>Date Paid</th>
+                  <th>Next Due</th>
+                </tr>
+              </thead>
+              <tbody id="recentPaymentsTable"></tbody>
+            </table>
+          </div>
+
+          <!-- Overdue Tenants -->
+          <h2 style="margin-top: 30px; margin-bottom: 10px">
+            ⚠️ Overdue Tenants
+          </h2>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tenant</th>
+                  <th>Phone</th>
+                  <th>Amount Due</th>
+                  <th>Overdue By</th>
+                </tr>
+              </thead>
+              <tbody id="overdueTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Users -->
+        <section id="users" class="page">
+          <h1>Users Management</h1>
+          <div class="user-form">
+            <input type="hidden" id="userId" />
+            <input type="text" id="username" placeholder="Username" />
+            <input type="email" id="email" placeholder="Email" />
+            <input type="text" id="phone" placeholder="Phone Number" />
+            <input type="password" id="password" placeholder="Password" />
+            <input type="number" id="space" placeholder="Space (m2)" min="1" />
+            <select id="period">
+              <option value="">Payment Period</option>
+              <option value="1">1 Month</option>
+              <option value="3">3 Months</option>
+              <option value="6">6 Months</option>
+            </select>
+            <input
+              type="text"
+              id="amount"
+              placeholder="Amount (auto)"
+              readonly
+            />
+            <button onclick="saveUser()">Save User</button>
+            <button class="btn-cancel" onclick="clearForm()">Cancel</button>
+          </div>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Password</th>
+                  <th>Space (m2)</th>
+                  <th>Period</th>
+                  <th>Amount</th>
+                  <th>Countdown</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="userTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Payments -->
+        <section id="payments" class="page">
+          <h1>Payment History</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>user</th>
+                <th>Amount</th>
+                <th>Space (m2)</th>
+                <th>Period</th>
+                <th>Date Paid</th>
+                <th>Next Due</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentTable"></tbody>
+          </table>
+        </section>
+
+        <!-- Requests -->
+        <!-- Requests -->
+        <section id="requests" class="page">
+          <h1>Rental Requests</h1>
+
+          <div class="cards" style="margin-bottom: 20px">
+            <div class="card">
+              <div class="card-label">📋 Total Requests</div>
+              <div class="card-value" id="totalRequests">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">⏳ Pending</div>
+              <div class="card-value" id="pendingRequests">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">✅ Accepted</div>
+              <div class="card-value" id="acceptedRequests">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">❌ Rejected</div>
+              <div class="card-value" id="rejectedRequests">0</div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Space (m2)</th>
+                  <th>Message</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Reason</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Reject Modal -->
+        <div
+          id="rejectModal"
+          style="
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+          "
+        >
+          <div
+            style="
+              background: white;
+              border-radius: 12px;
+              padding: 30px;
+              width: 400px;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            "
+          >
+            <h3 style="margin-bottom: 15px; color: #0f3d2e">Reject Request</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 10px">
+              Please provide a reason for rejection:
+            </p>
+            <textarea
+              id="rejectReason"
+              rows="4"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-family: Arial;
+                font-size: 14px;
+                outline: none;
+                resize: vertical;
+              "
+            ></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 15px">
+              <button
+                onclick="confirmReject()"
+                style="
+                  flex: 1;
+                  padding: 10px;
+                  background: #e53e3e;
+                  color: white;
+                  border: none;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                ❌ Confirm Reject
+              </button>
+              <button
+                onclick="closeRejectModal()"
+                style="
+                  flex: 1;
+                  padding: 10px;
+                  background: #999;
+                  color: white;
+                  border: none;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <!-- Settings -->
+        <section id="settings" class="page">
+          <h1>Settings</h1>
+
+          <!-- Pricing -->
+          <div class="settings-card">
+            <h3>💰 Pricing</h3>
+            <div class="settings-form">
+              <label>Price per m2 ($)</label>
+              <input
+                type="number"
+                id="pricePerM2"
+                placeholder="e.g. 10"
+                min="1"
+              />
+              <button onclick="saveSettings()">Save</button>
+              <p id="settingsMsg"></p>
+            </div>
+          </div>
+
+          <!-- Business Info -->
+          <div class="settings-card">
+            <h3>🏢 Business Info</h3>
+            <div class="settings-form">
+              <label>Contact Phone</label>
+              <input type="text" id="settingsPhone" />
+              <label>Contact Email</label>
+              <input type="email" id="settingsEmail" />
+              <label>Telegram Link</label>
+              <input type="text" id="settingsTelegram" />
+              <button onclick="saveBusinessInfo()">Save</button>
+              <p id="businessInfoMsg"></p>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="settings-card">
+            <h3>🔑 Change Admin Password</h3>
+            <div class="settings-form">
+              <label>Current Password</label>
+              <input
+                type="password"
+                id="currentPassword"
+                placeholder="Current password"
+              />
+              <label>New Password</label>
+              <input
+                type="password"
+                id="newPassword"
+                placeholder="New password"
+              />
+              <label>Confirm New Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Confirm new password"
+              />
+              <button onclick="changePassword()">Change Password</button>
+              <p id="passwordMsg"></p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="admin-dashboard.js"></script>
+  </body>
+</html>

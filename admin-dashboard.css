@@ -1,0 +1,285 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  overflow-x: hidden;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100vh;
+  background: #0f3d2e;
+  color: white;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar nav a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  background: white;
+  color: black;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+  margin-left: 260px;
+  min-width: 0;
+  overflow-x: auto;
+  width: calc(100% - 260px);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  flex: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #0f3d2e;
+}
+
+/* User Form */
+.user-form {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.user-form input,
+.user-form select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.user-form input[readonly] {
+  background: #f0f0f0;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.user-form button {
+  padding: 8px 16px;
+  background: #0f3d2e;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.user-form button:hover {
+  background: #145a3a;
+}
+
+.btn-cancel {
+  background: #999 !important;
+}
+
+.btn-cancel:hover {
+  background: #777 !important;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  background: #0f3d2e;
+  color: white;
+}
+
+tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.btn-delete {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-edit {
+  background: #d97706;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 5px;
+}
+
+.btn-paid {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 5px;
+}
+
+.btn-delete:hover {
+  background: #c53030;
+}
+.btn-edit:hover {
+  background: #b45309;
+}
+.btn-paid:hover {
+  background: #16a34a;
+}
+
+/* Settings */
+/* Settings */
+.settings-card {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 450px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.settings-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f3d2e;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-form label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.settings-form input {
+  padding: 9px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.settings-form input:focus {
+  border-color: #0f3d2e;
+}
+
+.settings-form button {
+  padding: 10px;
+  background: #0f3d2e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 5px;
+  transition: background 0.2s;
+}
+
+.settings-form button:hover {
+  background: #145a3a;
+}
+
+.settings-form p {
+  font-size: 13px;
+  margin: 0;
+}
+.nav-badge {
+  background: #e53e3e;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 5px;
+}
