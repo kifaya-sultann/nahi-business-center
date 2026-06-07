@@ -1,0 +1,218 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  overflow-x: hidden;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100vh;
+  background: #0f3d2e;
+  color: white;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar nav a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  background: white;
+  color: black;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+  margin-left: 260px;
+  min-width: 0;
+  overflow-x: auto;
+  width: calc(100% - 260px);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  flex: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #0f3d2e;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  background: #0f3d2e;
+  color: white;
+}
+
+tbody tr:hover {
+  background: #f9f9f9;
+}
+
+/* User Form */
+.user-form {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.user-form select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.user-form button {
+  padding: 8px 16px;
+  background: #0f3d2e;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.user-form button:hover {
+  background: #145a3a;
+}
+
+/* Countdown */
+.countdown-box {
+  background: white;
+  border-radius: 10px;
+  padding: 50px 30px;
+  text-align: center;
+  max-width: 500px;
+  margin: 20px auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.countdown-date {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.countdown-timer {
+  font-size: 52px;
+  font-weight: bold;
+  color: #0f3d2e;
+  margin-bottom: 10px;
+}
+
+.countdown-status {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Receipt Box */
+.receipt-box {
+  background: white;
+  border-radius: 10px;
+  padding: 40px;
+  max-width: 500px;
+  margin: 20px auto;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  color: #444;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Telegram Button */
+.telegram-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 14px 32px;
+  background: #229ed9;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.telegram-btn:hover {
+  background: #1a8bbf;
+}

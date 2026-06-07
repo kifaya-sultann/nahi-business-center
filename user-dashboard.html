@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="user-dashboard.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <h2>User Panel</h2>
+        <nav>
+          <a href="#" class="nav-link active" data-page="myspace"
+            >🏢 My Space</a
+          >
+          <a href="#" class="nav-link" data-page="mypayments">💳 My Payments</a>
+          <a href="#" class="nav-link" data-page="countdown">⏳ Countdown</a>
+          <a href="#" class="nav-link" data-page="uploadreceipt"
+            >📤 Upload Receipt</a
+          >
+          <a href="#" class="nav-link" data-page="myrequests">🔧 My Requests</a>
+          <a href="#" id="logout">🚪 Logout</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main">
+        <!-- My Space -->
+        <section id="myspace" class="page active">
+          <h1>My Space</h1>
+          <div class="cards">
+            <div class="card">
+              <div class="card-label">📐 Space</div>
+              <div class="card-value" id="userSpace">—</div>
+            </div>
+            <div class="card">
+              <div class="card-label">💰 Amount</div>
+              <div class="card-value" id="userAmount">—</div>
+            </div>
+            <div class="card">
+              <div class="card-label">📅 Period</div>
+              <div class="card-value" id="userPeriod">—</div>
+            </div>
+            <div class="card">
+              <div class="card-label">⏳ Next Due</div>
+              <div class="card-value" id="userNextDue">—</div>
+            </div>
+          </div>
+
+          <h2 style="margin-top: 30px; margin-bottom: 10px">My Details</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Info</th>
+              </tr>
+            </thead>
+            <tbody id="userDetailsTable"></tbody>
+          </table>
+        </section>
+
+        <!-- My Payments -->
+        <section id="mypayments" class="page">
+          <h1>My Payments</h1>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Space (m2)</th>
+                  <th>Period</th>
+                  <th>Date Paid</th>
+                  <th>Next Due</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="userPaymentTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Countdown -->
+        <section id="countdown" class="page">
+          <h1>Payment Countdown</h1>
+          <div class="countdown-box">
+            <p id="countdownDate" class="countdown-date">—</p>
+            <div id="countdownTimer" class="countdown-timer">—</div>
+            <p id="countdownStatus" class="countdown-status"></p>
+          </div>
+        </section>
+
+        <!-- Upload Receipt -->
+        <section id="uploadreceipt" class="page">
+          <h1>Upload Receipt</h1>
+          <div class="receipt-box">
+            <p>
+              After making your payment, send your receipt via Telegram so our
+              team can verify it.
+            </p>
+            <a id="telegramLink" href="#" target="_blank" class="telegram-btn">
+              📲 Send Receipt on Telegram
+            </a>
+            <p style="margin-top: 15px; font-size: 12px; color: #999">
+              Once verified, the admin will mark your payment as confirmed.
+            </p>
+          </div>
+        </section>
+
+        <!-- My Requests -->
+        <section id="myrequests" class="page">
+          <h1>My Requests</h1>
+
+          <div class="user-form">
+            <select id="reqType">
+              <option value="">Select Request Type</option>
+              <option value="Maintenance">🔧 Maintenance</option>
+              <option value="Printing">🖨️ Printing/Scanning</option>
+              <option value="Meeting Room">🏢 Meeting Room Booking</option>
+              <option value="Internet">🌐 Internet Issue</option>
+              <option value="Other">📝 Other</option>
+            </select>
+            <textarea
+              id="reqDescription"
+              placeholder="Describe your request..."
+              style="
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 14px;
+                flex: 1;
+                min-width: 200px;
+                resize: vertical;
+              "
+            ></textarea>
+            <button onclick="submitRequest()">Submit Request</button>
+          </div>
+
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="myRequestsTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="user-dashboard.js"></script>
+  </body>
+</html>

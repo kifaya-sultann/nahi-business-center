@@ -30,7 +30,13 @@ form.addEventListener("submit", (e) => {
       alert("Invalid admin credentials");
     }
   } else if (role === "user") {
-    if (username === user.username && password === user.password) {
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const foundUser = users.find(
+      (u) => u.username === username && u.password === password,
+    );
+
+    if (foundUser) {
+      localStorage.setItem("loggedInUser", foundUser.username);
       window.location.href = "user-dashboard.html";
     } else {
       alert("Invalid user credentials");
