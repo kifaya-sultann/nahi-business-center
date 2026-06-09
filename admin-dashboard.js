@@ -20,7 +20,6 @@ document.getElementById("logout").addEventListener("click", () => {
 });
 
 // Data
-// Data
 let users = JSON.parse(localStorage.getItem("users")) || [];
 let payments = JSON.parse(localStorage.getItem("payments")) || [];
 let requests = JSON.parse(localStorage.getItem("requests")) || [];
@@ -30,22 +29,20 @@ let rejectTargetId = null;
 // Load on start
 window.addEventListener("load", () => {
   document.getElementById("pricePerM2").value = pricePerM2;
-
-  // Load saved business info
   document.getElementById("settingsPhone").value =
     localStorage.getItem("bizPhone") || "";
   document.getElementById("settingsEmail").value =
     localStorage.getItem("bizEmail") || "";
   document.getElementById("settingsTelegram").value =
     localStorage.getItem("bizTelegram") || "";
-
   updateDashboard();
   renderUsers();
   renderPayments();
   renderRequests();
+  renderServiceRequests();
 });
 
-// Auto calculate amount when space or period changes
+// Auto calculate amount
 document.getElementById("space").addEventListener("input", calcAmount);
 document.getElementById("period").addEventListener("change", calcAmount);
 
@@ -71,15 +68,13 @@ function saveSettings() {
 
 // Save Business Info
 function saveBusinessInfo() {
-  const phone    = document.getElementById("settingsPhone").value.trim();
-  const email    = document.getElementById("settingsEmail").value.trim();
+  const phone = document.getElementById("settingsPhone").value.trim();
+  const email = document.getElementById("settingsEmail").value.trim();
   const telegram = document.getElementById("settingsTelegram").value.trim();
-
   if (!phone || !email || !telegram) {
     alert("Please fill all fields");
     return;
   }
-
   localStorage.setItem("bizPhone", phone);
   localStorage.setItem("bizEmail", email);
   localStorage.setItem("bizTelegram", telegram);
@@ -91,22 +86,23 @@ function changePassword() {
   const current = document.getElementById("currentPassword").value;
   const newPass = document.getElementById("newPassword").value;
   const confirm = document.getElementById("confirmPassword").value;
-
   const savedPassword = localStorage.getItem("adminPassword") || "admin123";
-
   if (current !== savedPassword) {
     showMsg("passwordMsg", "❌ Current password is incorrect", "red");
     return;
   }
   if (!newPass || newPass.length < 4) {
-    showMsg("passwordMsg", "❌ New password must be at least 4 characters", "red");
+    showMsg(
+      "passwordMsg",
+      "❌ New password must be at least 4 characters",
+      "red",
+    );
     return;
   }
   if (newPass !== confirm) {
     showMsg("passwordMsg", "❌ Passwords do not match", "red");
     return;
   }
-
   localStorage.setItem("adminPassword", newPass);
   document.getElementById("currentPassword").value = "";
   document.getElementById("newPassword").value = "";
@@ -114,15 +110,15 @@ function changePassword() {
   showMsg("passwordMsg", "✅ Password changed successfully!", "green");
 }
 
-// Helper: show message then hide
+// Helper
 function showMsg(id, text, color) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.style.color = color === "green" ? "#22c55e" : "#e53e3e";
-  setTimeout(() => el.textContent = "", 3000);
+  setTimeout(() => (el.textContent = ""), 3000);
 }
 
-// Save User (Add or Edit)
+// Save User
 function saveUser() {
   const id = document.getElementById("userId").value;
   const username = document.getElementById("username").value.trim();
@@ -131,14 +127,11 @@ function saveUser() {
   const password = document.getElementById("password").value.trim();
   const space = parseFloat(document.getElementById("space").value);
   const period = parseInt(document.getElementById("period").value);
-
   if (!username || !email || !phone || !password || !space || !period) {
     alert("Please fill all fields");
     return;
   }
-
   const amount = space * pricePerM2 * period;
-
   if (id) {
     const index = users.findIndex((u) => u.id == id);
     users[index] = {
@@ -165,7 +158,6 @@ function saveUser() {
       amount,
     });
   }
-
   localStorage.setItem("users", JSON.stringify(users));
   clearForm();
   renderUsers();
@@ -176,18 +168,15 @@ function saveUser() {
 function renderUsers() {
   const table = document.getElementById("userTable");
   table.innerHTML = "";
-
   users.forEach((user) => {
     const lastPayment = payments
       .filter((p) => p.tenant === user.username)
       .pop();
     let countdownHTML = '<span style="color:#999">No payment yet</span>';
-
     if (lastPayment) {
       const nextDue = new Date(lastPayment.nextDueRaw);
       const today = new Date();
       const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-
       if (diff > 0) {
         countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
       } else if (diff === 0) {
@@ -196,7 +185,6 @@ function renderUsers() {
         countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
       }
     }
-
     table.innerHTML += `
       <tr>
         <td>${user.id}</td>
@@ -209,23 +197,22 @@ function renderUsers() {
         <td>$${user.amount.toFixed(2)}</td>
         <td>${countdownHTML}</td>
         <td>
-          <button class="btn-paid"   onclick="markPaid(${user.id})">✅ Paid</button>
-          <button class="btn-edit"   onclick="editUser(${user.id})">Edit</button>
+          <button class="btn-paid" onclick="markPaid(${user.id})">✅ Paid</button>
+          <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
           <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
         </td>
       </tr>
     `;
   });
 }
+
 // Mark as Paid
 function markPaid(id) {
   const user = users.find((u) => u.id === id);
   if (!user) return;
-
   const today = new Date();
   const dueDate = new Date();
   dueDate.setMonth(dueDate.getMonth() + user.period);
-
   const payment = {
     id: Date.now(),
     tenant: user.username,
@@ -236,7 +223,6 @@ function markPaid(id) {
     nextDue: dueDate.toLocaleDateString(),
     nextDueRaw: dueDate.toISOString(),
   };
-
   payments.push(payment);
   localStorage.setItem("payments", JSON.stringify(payments));
   renderPayments();
@@ -245,15 +231,15 @@ function markPaid(id) {
     `✅ ${user.username} marked as paid. Next due: ${dueDate.toLocaleDateString()}`,
   );
 }
+
+// Render Payments
 function renderPayments() {
   const table = document.getElementById("paymentTable");
   table.innerHTML = "";
-
   payments.forEach((p) => {
     const nextDue = new Date(p.nextDueRaw);
     const today = new Date();
     const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-
     let countdownHTML = "";
     if (diff > 0) {
       countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
@@ -262,7 +248,6 @@ function renderPayments() {
     } else {
       countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
     }
-
     table.innerHTML += `
       <tr>
         <td>${p.tenant}</td>
@@ -276,6 +261,7 @@ function renderPayments() {
     `;
   });
 }
+
 // Edit User
 function editUser(id) {
   const user = users.find((u) => u.id === id);
@@ -312,19 +298,13 @@ function clearForm() {
 
 // Update Dashboard
 function updateDashboard() {
-  // Total users
   document.getElementById("totalUsers").textContent = users.length;
-
-  // Total revenue
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
   document.getElementById("totalRevenue").textContent =
     "$" + totalRevenue.toFixed(2);
-
-  // Overdue and due this month
   const today = new Date();
   let overdueCount = 0;
   let dueThisMonth = 0;
-
   users.forEach((user) => {
     const lastPayment = payments
       .filter((p) => p.tenant === user.username)
@@ -338,15 +318,12 @@ function updateDashboard() {
       overdueCount++;
     }
   });
-
   document.getElementById("overdueCount").textContent = overdueCount;
   document.getElementById("dueThisMonth").textContent = dueThisMonth;
 
-  // Recent payments (last 5)
   const recentTable = document.getElementById("recentPaymentsTable");
   recentTable.innerHTML = "";
   const recent = [...payments].reverse().slice(0, 5);
-
   if (recent.length === 0) {
     recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
   } else {
@@ -362,18 +339,15 @@ function updateDashboard() {
     });
   }
 
-  // Overdue tenants list
   const overdueTable = document.getElementById("overdueTable");
   overdueTable.innerHTML = "";
   let hasOverdue = false;
-
   users.forEach((user) => {
     const lastPayment = payments
       .filter((p) => p.tenant === user.username)
       .pop();
     let isOverdue = false;
     let overdueDays = 0;
-
     if (lastPayment) {
       const nextDue = new Date(lastPayment.nextDueRaw);
       const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
@@ -385,7 +359,6 @@ function updateDashboard() {
       isOverdue = true;
       overdueDays = "Never paid";
     }
-
     if (isOverdue) {
       hasOverdue = true;
       overdueTable.innerHTML += `
@@ -398,17 +371,16 @@ function updateDashboard() {
       `;
     }
   });
-
   if (!hasOverdue) {
     overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
   }
 }
+
 // Render Requests
 function renderRequests() {
   requests = JSON.parse(localStorage.getItem("requests")) || [];
   const table = document.getElementById("requestsTable");
   table.innerHTML = "";
-
   if (requests.length === 0) {
     table.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#999;padding:20px;">No requests yet</td></tr>`;
   } else {
@@ -421,7 +393,6 @@ function renderRequests() {
       } else {
         statusBadge = `<span style="color:#e53e3e;font-weight:bold">❌ Rejected</span>`;
       }
-
       let actionsHTML = "";
       if (r.status === "Pending") {
         actionsHTML = `
@@ -431,7 +402,6 @@ function renderRequests() {
       } else {
         actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
       }
-
       table.innerHTML += `
         <tr>
           <td>${r.id}</td>
@@ -448,8 +418,6 @@ function renderRequests() {
       `;
     });
   }
-
-  // Update stat cards
   document.getElementById("totalRequests").textContent = requests.length;
   document.getElementById("pendingRequests").textContent = requests.filter(
     (r) => r.status === "Pending",
@@ -460,8 +428,6 @@ function renderRequests() {
   document.getElementById("rejectedRequests").textContent = requests.filter(
     (r) => r.status === "Rejected",
   ).length;
-
-  // Update sidebar badge
   const pending = requests.filter((r) => r.status === "Pending").length;
   const badge = document.getElementById("requestBadge");
   if (pending > 0) {
@@ -478,19 +444,14 @@ function acceptRequest(id) {
   const r = requests.find((r) => r.id === id);
   r.status = "Accepted";
   localStorage.setItem("requests", JSON.stringify(requests));
-
-  // Pre-fill user form
   document.getElementById("username").value = r.name;
   document.getElementById("email").value = r.email;
   document.getElementById("phone").value = r.phone;
   document.getElementById("space").value = r.space;
-
-  // Switch to users page
   pages.forEach((p) => p.classList.remove("active"));
   document.getElementById("users").classList.add("active");
   links.forEach((l) => l.classList.remove("active"));
   document.querySelector('[data-page="users"]').classList.add("active");
-
   renderRequests();
   alert("✅ Request accepted! Please complete the user form and save.");
 }
@@ -522,4 +483,74 @@ function confirmReject() {
   localStorage.setItem("requests", JSON.stringify(requests));
   closeRejectModal();
   renderRequests();
+}
+
+// Render Service Requests
+function renderServiceRequests() {
+  const myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
+  const table = document.getElementById("serviceRequestsTable");
+  table.innerHTML = "";
+  if (myRequests.length === 0) {
+    table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No service requests yet</td></tr>`;
+  } else {
+    [...myRequests].reverse().forEach((r) => {
+      let statusHTML = "";
+      if (r.status === "Pending") {
+        statusHTML = `<span style="color:#d97706;font-weight:bold;">⏳ Pending</span>`;
+      } else if (r.status === "In Progress") {
+        statusHTML = `<span style="color:#3b82f6;font-weight:bold;">🔄 In Progress</span>`;
+      } else {
+        statusHTML = `<span style="color:#22c55e;font-weight:bold;">✅ Done</span>`;
+      }
+      let actionsHTML = "";
+      if (r.status === "Pending") {
+        actionsHTML = `
+          <button class="btn-edit" onclick="updateServiceRequest(${r.id}, 'In Progress')">🔄 In Progress</button>
+          <button class="btn-paid" onclick="updateServiceRequest(${r.id}, 'Done')">✅ Done</button>
+        `;
+      } else if (r.status === "In Progress") {
+        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest(${r.id}, 'Done')">✅ Mark Done</button>`;
+      } else {
+        actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
+      }
+      table.innerHTML += `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.tenant}</td>
+          <td>${r.type}</td>
+          <td>${r.description}</td>
+          <td>${r.date}</td>
+          <td>${statusHTML}</td>
+          <td>${actionsHTML}</td>
+        </tr>
+      `;
+    });
+  }
+  document.getElementById("totalServiceReqs").textContent = myRequests.length;
+  document.getElementById("pendingServiceReqs").textContent = myRequests.filter(
+    (r) => r.status === "Pending",
+  ).length;
+  document.getElementById("inProgressServiceReqs").textContent =
+    myRequests.filter((r) => r.status === "In Progress").length;
+  document.getElementById("doneServiceReqs").textContent = myRequests.filter(
+    (r) => r.status === "Done",
+  ).length;
+  const pending = myRequests.filter((r) => r.status === "Pending").length;
+  const badge = document.getElementById("serviceRequestBadge");
+  if (pending > 0) {
+    badge.style.display = "inline-block";
+    badge.textContent = pending;
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// Update Service Request Status
+function updateServiceRequest(id, status) {
+  let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
+  const index = myRequests.findIndex((r) => r.id === id);
+  if (index === -1) return;
+  myRequests[index].status = status;
+  localStorage.setItem("myRequests", JSON.stringify(myRequests));
+  renderServiceRequests();
 }

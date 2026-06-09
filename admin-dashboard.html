@@ -18,10 +18,18 @@
           <a href="#" class="nav-link" data-page="users">👥 Users</a>
           <a href="#" class="nav-link" data-page="payments">💳 Payments</a>
           <a href="#" class="nav-link" data-page="requests"
-            >📋 Requests
+            >📋 Rental Requests
             <span
               class="nav-badge"
               id="requestBadge"
+              style="display: none"
+            ></span
+          ></a>
+          <a href="#" class="nav-link" data-page="servicerequests"
+            >🔧 Service Requests
+            <span
+              class="nav-badge"
+              id="serviceRequestBadge"
               style="display: none"
             ></span
           ></a>
@@ -198,7 +206,46 @@
             </table>
           </div>
         </section>
+        <!-- Service Requests -->
+        <section id="servicerequests" class="page">
+          <h1>Service Requests</h1>
 
+          <div class="cards" style="margin-bottom: 20px">
+            <div class="card">
+              <div class="card-label">🔧 Total</div>
+              <div class="card-value" id="totalServiceReqs">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">⏳ Pending</div>
+              <div class="card-value" id="pendingServiceReqs">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">🔄 In Progress</div>
+              <div class="card-value" id="inProgressServiceReqs">0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">✅ Done</div>
+              <div class="card-value" id="doneServiceReqs">0</div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tenant</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="serviceRequestsTable"></tbody>
+            </table>
+          </div>
+        </section>
         <!-- Reject Modal -->
         <div
           id="rejectModal"
