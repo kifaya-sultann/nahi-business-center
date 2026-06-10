@@ -278,9 +278,33 @@ function editUser(id) {
 // Delete User
 function deleteUser(id) {
   if (!confirm("Are you sure you want to delete this user?")) return;
+
+  // Get username before deleting
+  const user = users.find((u) => u.id === id);
+
+  // Delete user
   users = users.filter((u) => u.id !== id);
   localStorage.setItem("users", JSON.stringify(users));
+
+  // Delete their payments
+  let allPayments = JSON.parse(localStorage.getItem("payments")) || [];
+  allPayments = allPayments.filter((p) => p.tenant !== user.username);
+  localStorage.setItem("payments", JSON.stringify(allPayments));
+  payments = allPayments;
+
+  // Delete their service requests
+  let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
+  myRequests = myRequests.filter((r) => r.tenant !== user.username);
+  localStorage.setItem("myRequests", JSON.stringify(myRequests));
+
+  // Logout if currently logged in
+  if (localStorage.getItem("loggedInUser") === user.username) {
+    localStorage.removeItem("loggedInUser");
+  }
+
   renderUsers();
+  renderPayments();
+  renderServiceRequests();
   updateDashboard();
 }
 
