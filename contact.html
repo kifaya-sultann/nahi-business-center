@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Business Center</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="contact.css" />
   </head>
   <body>
     <!-- NAVBAR -->
@@ -13,7 +14,6 @@
         <img src="logo.jpg" alt="logo" />
         <span>BUSINESS CENTER</span>
       </div>
-
       <nav>
         <a href="index.html">Home</a>
         <a href="request.html">Request</a>
@@ -22,5 +22,72 @@
         <a class="login-btn" href="login.html">Login</a>
       </nav>
     </header>
+
+    <!-- HERO -->
+    <div class="contact-hero">
+      <h1>Contact Us</h1>
+      <p>We'd love to hear from you. Reach out anytime.</p>
+    </div>
+
+    <!-- CONTACT SECTION -->
+    <section class="contact-section">
+      <!-- INFO CARDS -->
+      <div class="contact-cards">
+        <div class="contact-card">
+          <div class="contact-icon">📞</div>
+          <div class="contact-label">Phone</div>
+          <a class="contact-value" id="contactPhone" href="#">—</a>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon">📧</div>
+          <div class="contact-label">Email</div>
+          <a class="contact-value" id="contactEmail" href="#">—</a>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon">📍</div>
+          <div class="contact-label">Location</div>
+          <a
+            class="contact-value"
+            id="contactLocation"
+            href="https://www.google.com/maps/search/Adama+Ethiopia"
+            target="_blank"
+            >Adama, Ethiopia</a
+          >
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon">📲</div>
+          <div class="contact-label">Telegram</div>
+          <a
+            class="contact-value telegram-link"
+            id="contactTelegram"
+            href="#"
+            target="_blank"
+            >Open Telegram</a
+          >
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="map-container">
+        <h2>📍 Find Us Here</h2>
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15730.123456789!2d39.2697!3d8.5400!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x164b1f2a2a2a2a2a%3A0x2a2a2a2a2a2a2a2a!2sAdama%2C%20Ethiopia!5e0!3m2!1sen!2set!4v1234567890"
+          width="100%"
+          height="400"
+          style="border: 0"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+        >
+        </iframe>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>© 2026 Nahi Business Center. All rights reserved.</p>
+    </footer>
+
+    <script src="contact.js"></script>
   </body>
 </html>
