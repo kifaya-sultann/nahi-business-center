@@ -23,6 +23,7 @@ document.getElementById("logout").addEventListener("click", () => {
 let users = JSON.parse(localStorage.getItem("users")) || [];
 let payments = JSON.parse(localStorage.getItem("payments")) || [];
 let requests = JSON.parse(localStorage.getItem("requests")) || [];
+let spaces = JSON.parse(localStorage.getItem("spaces")) || [];
 let pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
 let rejectTargetId = null;
 
@@ -35,16 +36,19 @@ window.addEventListener("load", () => {
     localStorage.getItem("bizEmail") || "";
   document.getElementById("settingsTelegram").value =
     localStorage.getItem("bizTelegram") || "";
+
   updateDashboard();
   renderUsers();
   renderPayments();
   renderRequests();
   renderServiceRequests();
+  renderSpaces();
 });
 
 // Auto calculate amount
 document.getElementById("space").addEventListener("input", calcAmount);
 document.getElementById("period").addEventListener("change", calcAmount);
+document.getElementById("spaceSize").addEventListener("input", calcSpacePrice);
 
 function calcAmount() {
   const space = parseFloat(document.getElementById("space").value) || 0;
@@ -52,6 +56,13 @@ function calcAmount() {
   const amount = space * pricePerM2 * period;
   document.getElementById("amount").value =
     amount > 0 ? "$" + amount.toFixed(2) : "";
+}
+
+function calcSpacePrice() {
+  const size = parseFloat(document.getElementById("spaceSize").value) || 0;
+  const price = size * pricePerM2;
+  document.getElementById("spacePrice").value =
+    price > 0 ? "$" + price.toFixed(2) + "/month" : "";
 }
 
 // Save Price Settings
@@ -71,6 +82,7 @@ function saveBusinessInfo() {
   const phone = document.getElementById("settingsPhone").value.trim();
   const email = document.getElementById("settingsEmail").value.trim();
   const telegram = document.getElementById("settingsTelegram").value.trim();
+
   if (!phone || !email || !telegram) {
     alert("Please fill all fields");
     return;
@@ -78,6 +90,7 @@ function saveBusinessInfo() {
   localStorage.setItem("bizPhone", phone);
   localStorage.setItem("bizEmail", email);
   localStorage.setItem("bizTelegram", telegram);
+
   showMsg("businessInfoMsg", "✅ Business info saved!", "green");
 }
 
@@ -278,30 +291,19 @@ function editUser(id) {
 // Delete User
 function deleteUser(id) {
   if (!confirm("Are you sure you want to delete this user?")) return;
-
-  // Get username before deleting
   const user = users.find((u) => u.id === id);
-
-  // Delete user
   users = users.filter((u) => u.id !== id);
   localStorage.setItem("users", JSON.stringify(users));
-
-  // Delete their payments
   let allPayments = JSON.parse(localStorage.getItem("payments")) || [];
   allPayments = allPayments.filter((p) => p.tenant !== user.username);
   localStorage.setItem("payments", JSON.stringify(allPayments));
   payments = allPayments;
-
-  // Delete their service requests
   let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
   myRequests = myRequests.filter((r) => r.tenant !== user.username);
   localStorage.setItem("myRequests", JSON.stringify(myRequests));
-
-  // Logout if currently logged in
   if (localStorage.getItem("loggedInUser") === user.username) {
     localStorage.removeItem("loggedInUser");
   }
-
   renderUsers();
   renderPayments();
   renderServiceRequests();
@@ -344,7 +346,6 @@ function updateDashboard() {
   });
   document.getElementById("overdueCount").textContent = overdueCount;
   document.getElementById("dueThisMonth").textContent = dueThisMonth;
-
   const recentTable = document.getElementById("recentPaymentsTable");
   recentTable.innerHTML = "";
   const recent = [...payments].reverse().slice(0, 5);
@@ -362,7 +363,6 @@ function updateDashboard() {
       `;
     });
   }
-
   const overdueTable = document.getElementById("overdueTable");
   overdueTable.innerHTML = "";
   let hasOverdue = false;
@@ -577,4 +577,90 @@ function updateServiceRequest(id, status) {
   myRequests[index].status = status;
   localStorage.setItem("myRequests", JSON.stringify(myRequests));
   renderServiceRequests();
+}
+
+// Save Space
+function saveSpace() {
+  const id = document.getElementById("spaceId").value;
+  const floor = parseInt(document.getElementById("spaceFloor").value);
+  const room = document.getElementById("spaceRoom").value.trim();
+  const size = parseFloat(document.getElementById("spaceSize").value);
+  const status = document.getElementById("spaceStatus").value;
+  if (!floor || !room || !size) {
+    alert("Please fill all fields");
+    return;
+  }
+  const price = size * pricePerM2;
+  if (id) {
+    const index = spaces.findIndex((s) => s.id == id);
+    spaces[index] = { ...spaces[index], floor, room, size, status, price };
+  } else {
+    const newId =
+      spaces.length > 0 ? Math.max(...spaces.map((s) => s.id)) + 1 : 1;
+    spaces.push({ id: newId, floor, room, size, status, price });
+  }
+  localStorage.setItem("spaces", JSON.stringify(spaces));
+  clearSpaceForm();
+  renderSpaces();
+}
+
+// Render Spaces Table
+function renderSpaces() {
+  spaces = JSON.parse(localStorage.getItem("spaces")) || [];
+  const table = document.getElementById("spacesTable");
+  table.innerHTML = "";
+  if (spaces.length === 0) {
+    table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No spaces added yet</td></tr>`;
+    return;
+  }
+  spaces.forEach((s) => {
+    const statusHTML =
+      s.status === "Available"
+        ? `<span style="color:#22c55e;font-weight:bold;">✅ Available</span>`
+        : `<span style="color:#e53e3e;font-weight:bold;">🔴 Occupied</span>`;
+    table.innerHTML += `
+      <tr>
+        <td>${s.id}</td>
+        <td>Floor ${s.floor}</td>
+        <td>Room ${s.room}</td>
+        <td>${s.size} m2</td>
+        <td>$${s.price.toFixed(2)}/month</td>
+        <td>${statusHTML}</td>
+        <td>
+          <button class="btn-edit" onclick="editSpace(${s.id})">Edit</button>
+          <button class="btn-delete" onclick="deleteSpace(${s.id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// Edit Space
+function editSpace(id) {
+  const s = spaces.find((s) => s.id === id);
+  document.getElementById("spaceId").value = s.id;
+  document.getElementById("spaceFloor").value = s.floor;
+  document.getElementById("spaceRoom").value = s.room;
+  document.getElementById("spaceSize").value = s.size;
+  document.getElementById("spaceStatus").value = s.status;
+  document.getElementById("spacePrice").value =
+    "$" + s.price.toFixed(2) + "/month";
+}
+
+// Delete Space
+function deleteSpace(id) {
+  if (!confirm("Are you sure you want to delete this space?")) return;
+  spaces = spaces.filter((s) => s.id !== id);
+  localStorage.setItem("spaces", JSON.stringify(spaces));
+  renderSpaces();
+}
+
+// Clear Space Form
+function clearSpaceForm() {
+  document.getElementById("spaceId").value = "";
+  document.getElementById("spaceFloor").value = "";
+  document.getElementById("spaceRoom").value = "";
+  document.getElementById("spaceSize").value = "";
+  document.getElementById("spaceStatus").value = "Available";
+  document.getElementById("spacePrice").value = "";
 }

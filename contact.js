@@ -10,7 +10,8 @@ window.addEventListener("load", () => {
 
   // Email — opens email app
   const emailEl = document.getElementById("contactEmail");
-  emailEl.href = "mailto:" + email;
+  emailEl.href = "https://mail.google.com/mail/?view=cm&to=" + email;
+  emailEl.target = "_blank";
   emailEl.textContent = email;
 
   // Telegram — opens Telegram

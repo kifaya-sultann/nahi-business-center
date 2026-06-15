@@ -25,6 +25,7 @@
               style="display: none"
             ></span
           ></a>
+          <a href="#" class="nav-link" data-page="spaces">🏠 Spaces</a>
           <a href="#" class="nav-link" data-page="servicerequests"
             >🔧 Service Requests
             <span
@@ -206,6 +207,7 @@
             </table>
           </div>
         </section>
+
         <!-- Service Requests -->
         <section id="servicerequests" class="page">
           <h1>Service Requests</h1>
@@ -243,6 +245,59 @@
                 </tr>
               </thead>
               <tbody id="serviceRequestsTable"></tbody>
+            </table>
+          </div>
+        </section>
+        <!-- Spaces -->
+        <section id="spaces" class="page">
+          <h1>Spaces Management</h1>
+
+          <div class="user-form">
+            <input type="hidden" id="spaceId" />
+            <input
+              type="number"
+              id="spaceFloor"
+              placeholder="Floor Number"
+              min="1"
+              max="5"
+            />
+            <input type="text" id="spaceRoom" placeholder="Room Number" />
+            <input
+              type="number"
+              id="spaceSize"
+              placeholder="Size (m2)"
+              min="1"
+            />
+            <select id="spaceStatus">
+              <option value="Available">Available</option>
+              <option value="Occupied">Occupied</option>
+            </select>
+            <input
+              type="text"
+              id="spacePrice"
+              placeholder="Price (auto)"
+              readonly
+            />
+            <button onclick="saveSpace()">Save Space</button>
+            <button class="btn-cancel" onclick="clearSpaceForm()">
+              Cancel
+            </button>
+          </div>
+
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Floor</th>
+                  <th>Room</th>
+                  <th>Size (m2)</th>
+                  <th>Price/Month</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="spacesTable"></tbody>
             </table>
           </div>
         </section>
@@ -334,12 +389,7 @@
             <h3>💰 Pricing</h3>
             <div class="settings-form">
               <label>Price per m2 ($)</label>
-              <input
-                type="number"
-                id="pricePerM2"
-                placeholder="e.g. 10"
-                min="1"
-              />
+              <input type="number" id="pricePerM2" min="1" />
               <button onclick="saveSettings()">Save</button>
               <p id="settingsMsg"></p>
             </div>
