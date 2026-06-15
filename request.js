@@ -1,41 +1,50 @@
-window.addEventListener("load", () => {
-  const spaces = JSON.parse(localStorage.getItem("spaces")) || [];
-  const pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
-  const container = document.getElementById("availableSpaces");
+document.getElementById("requestForm").addEventListener("submit", (e) => {
+  e.preventDefault();
 
-  const available = spaces.filter((s) => s.status === "Available");
+  const name = document.getElementById("reqName").value.trim();
+  const email = document.getElementById("reqEmail").value.trim();
+  const phone = document.getElementById("reqPhone").value.trim();
+  const space = document.getElementById("reqSpace").value.trim();
+  const message = document.getElementById("reqMessage").value.trim();
 
-  if (available.length === 0) {
-    container.innerHTML = `<div class="no-spaces">No available spaces at the moment. Please check back later or <a href="request.html" style="color:#22c55e;">submit a request</a>.</div>`;
+  if (!name || !email || !phone || !space) {
+    alert("Please fill in all required fields");
     return;
   }
 
-  available.forEach((s, index) => {
-    const price = parseFloat(s.price) || parseFloat(s.size) * pricePerM2;
-    container.innerHTML += `
-      <div class="space-card">
-        <div class="space-card-header">
-          <span class="space-card-title">Floor ${s.floor} — Room ${s.room}</span>
-          <span class="space-badge-available">✅ Available</span>
-        </div>
-        <div class="space-card-details">
-          <div class="space-detail">
-            <span>Size</span>
-            <span>${s.size} m2</span>
-          </div>
-          <div class="space-detail">
-            <span>Price per m2</span>
-            <span>$${pricePerM2}/m2</span>
-          </div>
-          <div class="space-detail">
-            <span>Monthly Price</span>
-            <span>$${price.toFixed(2)}/month</span>
-          </div>
-        </div>
-        <a href="request.html?floor=${s.floor}&room=${s.room}&size=${s.size}" class="space-request-btn">
-          Request This Space →
-        </a>
-      </div>
-    `;
+  let requests = JSON.parse(localStorage.getItem("requests")) || [];
+  const newId =
+    requests.length > 0 ? Math.max(...requests.map((r) => r.id)) + 1 : 1;
+
+  requests.push({
+    id: newId,
+    name,
+    email,
+    phone,
+    space,
+    message,
+    date: new Date().toLocaleDateString(),
+    status: "Pending",
   });
+
+  localStorage.setItem("requests", JSON.stringify(requests));
+  document.getElementById("successMsg").style.display = "block";
+  document.getElementById("requestForm").reset();
+  setTimeout(() => {
+    document.getElementById("successMsg").style.display = "none";
+  }, 5000);
+});
+
+// Pre-fill from URL parameters
+window.addEventListener("load", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const floor = urlParams.get("floor");
+  const room = urlParams.get("room");
+  const size = urlParams.get("size");
+
+  if (floor && room && size) {
+    document.getElementById("reqSpace").value = size;
+    document.getElementById("reqMessage").value =
+      `I am interested in Floor ${floor}, Room ${room} (${size} m2).`;
+  }
 });

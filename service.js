@@ -13,7 +13,7 @@ window.addEventListener("load", () => {
   available.forEach((s, index) => {
     const price = parseFloat(s.price) || parseFloat(s.size) * pricePerM2;
     container.innerHTML += `
-      <div class="space-card" style="opacity:0;animation: fadeUp 0.5s ease ${index * 0.1}s both forwards;">
+      <div class="space-card">
         <div class="space-card-header">
           <span class="space-card-title">Floor ${s.floor} — Room ${s.room}</span>
           <span class="space-badge-available">✅ Available</span>
