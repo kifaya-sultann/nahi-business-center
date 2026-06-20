@@ -18,14 +18,7 @@
           <a href="#" class="nav-link" data-page="users">👥 Users</a>
           <a href="#" class="nav-link" data-page="payments">💳 Payments</a>
           <a href="#" class="nav-link" data-page="expenses">💸 Expenses</a>
-          <a href="#" class="nav-link" data-page="requests"
-            >📋 Rental Requests
-            <span
-              class="nav-badge"
-              id="requestBadge"
-              style="display: none"
-            ></span>
-          </a>
+
           <a href="#" class="nav-link" data-page="spaces">🏠 Spaces</a>
           <a href="#" class="nav-link" data-page="servicerequests"
             >🔧 Service Requests
@@ -114,20 +107,40 @@
               <option value="3">3 Months</option>
               <option value="6">6 Months</option>
             </select>
-            <input
-              type="text"
-              id="amount"
-              placeholder="Amount (auto)"
-              readonly
-            />
-            <label class="manual-label">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex: 1;
+                min-width: 150px;
+              "
+            >
               <input
-                type="checkbox"
-                id="manualAmount"
-                onchange="toggleManualAmount()"
+                type="text"
+                id="amount"
+                placeholder="Amount (auto)"
+                readonly
+                style="flex: 1"
               />
-              Set amount manually
-            </label>
+              <button
+                type="button"
+                id="manualToggleBtn"
+                onclick="toggleManualAmount()"
+                style="
+                  padding: 8px 10px;
+                  background: #e2e8f0;
+                  color: #555;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-size: 12px;
+                  white-space: nowrap;
+                "
+              >
+                ✏️ Manual
+              </button>
+            </div>
             <button onclick="saveUser()">Save User</button>
             <button class="btn-cancel" onclick="clearForm()">Cancel</button>
           </div>
@@ -189,11 +202,7 @@
           </div>
           <div class="user-form">
             <input type="hidden" id="expenseId" />
-            <input
-              type="text"
-              id="expenseName"
-              placeholder="Name (e.g. Electricity Bill)"
-            />
+            <input type="text" id="expenseName" placeholder="Name" />
             <input
               type="text"
               id="expenseReason"
@@ -205,7 +214,14 @@
               placeholder="Amount ($)"
               min="0"
             />
-            <input type="date" id="expenseDate" />
+
+            <select id="expensePeriod">
+              <option value="">Payment Period</option>
+              <option value="15">15 Days</option>
+              <option value="30">1 Month</option>
+              <option value="90">3 Months</option>
+            </select>
+            <input type="hidden" id="expenseDate" />
             <button onclick="saveExpense()">Save Expense</button>
             <button class="btn-cancel" onclick="clearExpenseForm()">
               Cancel
@@ -219,53 +235,14 @@
                   <th>Name</th>
                   <th>Reason</th>
                   <th>Amount</th>
-                  <th>Date</th>
+                  <th>Date Paid</th>
+                  <th>Period</th>
+                  <th>Due Date</th>
+                  <th>Countdown</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="expensesTable"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Requests -->
-        <section id="requests" class="page">
-          <h1>Rental Requests</h1>
-          <div class="cards" style="margin-bottom: 20px">
-            <div class="card">
-              <div class="card-label">📋 Total Requests</div>
-              <div class="card-value" id="totalRequests">0</div>
-            </div>
-            <div class="card">
-              <div class="card-label">⏳ Pending</div>
-              <div class="card-value" id="pendingRequests">0</div>
-            </div>
-            <div class="card">
-              <div class="card-label">✅ Accepted</div>
-              <div class="card-value" id="acceptedRequests">0</div>
-            </div>
-            <div class="card">
-              <div class="card-label">❌ Rejected</div>
-              <div class="card-value" id="rejectedRequests">0</div>
-            </div>
-          </div>
-          <div style="overflow-x: auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Full Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Space (m2)</th>
-                  <th>Message</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Reason</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="requestsTable"></tbody>
             </table>
           </div>
         </section>
@@ -360,84 +337,6 @@
             </table>
           </div>
         </section>
-
-        <!-- Reject Modal -->
-        <div
-          id="rejectModal"
-          style="
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-          "
-        >
-          <div
-            style="
-              background: white;
-              border-radius: 12px;
-              padding: 30px;
-              width: 400px;
-              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            "
-          >
-            <h3 style="margin-bottom: 15px; color: #0f3d2e">Reject Request</h3>
-            <p style="font-size: 14px; color: #666; margin-bottom: 10px">
-              Please provide a reason for rejection:
-            </p>
-            <textarea
-              id="rejectReason"
-              rows="4"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                font-family: Arial;
-                font-size: 14px;
-                outline: none;
-                resize: vertical;
-              "
-            ></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 15px">
-              <button
-                onclick="confirmReject()"
-                style="
-                  flex: 1;
-                  padding: 10px;
-                  background: #e53e3e;
-                  color: white;
-                  border: none;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  font-size: 14px;
-                "
-              >
-                ❌ Confirm Reject
-              </button>
-              <button
-                onclick="closeRejectModal()"
-                style="
-                  flex: 1;
-                  padding: 10px;
-                  background: #999;
-                  color: white;
-                  border: none;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  font-size: 14px;
-                "
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
 
         <!-- Settings -->
         <section id="settings" class="page">

@@ -33,7 +33,6 @@ window.addEventListener("load", () => {
     window.location.href = "login.html";
     return;
   }
-
   loadMySpace();
   loadMyPayments();
   loadCountdown();
@@ -71,7 +70,6 @@ function loadMySpace() {
 function loadMyPayments() {
   const table = document.getElementById("userPaymentTable");
   table.innerHTML = "";
-
   const myPayments = payments.filter((p) => p.tenant === currentUser.username);
 
   if (myPayments.length === 0) {
@@ -174,7 +172,6 @@ function loadMyRequests() {
   const myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
   const table = document.getElementById("myRequestsTable");
   table.innerHTML = "";
-
   const mine = myRequests.filter((r) => r.tenant === currentUser.username);
 
   if (mine.length === 0) {
@@ -191,7 +188,6 @@ function loadMyRequests() {
     } else {
       statusHTML = `<span style="color:#22c55e;font-weight:bold;">✅ Done</span>`;
     }
-
     table.innerHTML += `
       <tr>
         <td>${r.type}</td>
@@ -201,4 +197,60 @@ function loadMyRequests() {
       </tr>
     `;
   });
+}
+
+// =====================
+// Settings - Change Password
+// =====================
+function changePassword() {
+  const current = document.getElementById("currentPassword").value.trim();
+  const newPass = document.getElementById("newPassword").value.trim();
+  const confirm = document.getElementById("confirmPassword").value.trim();
+  const msg = document.getElementById("passwordMsg");
+
+  msg.className = "password-msg";
+  msg.textContent = "";
+
+  if (!current || !newPass || !confirm) {
+    msg.classList.add("error");
+    msg.textContent = "⚠️ Please fill in all fields.";
+    return;
+  }
+  if (newPass.length < 6) {
+    msg.classList.add("error");
+    msg.textContent = "⚠️ New password must be at least 6 characters.";
+    return;
+  }
+  if (newPass !== confirm) {
+    msg.classList.add("error");
+    msg.textContent = "⚠️ New passwords do not match.";
+    return;
+  }
+
+  // Check against localStorage
+  const allUsers = JSON.parse(localStorage.getItem("users")) || [];
+  const userIndex = allUsers.findIndex((u) => u.username === loggedInUsername);
+
+  if (userIndex === -1) {
+    msg.classList.add("error");
+    msg.textContent = "❌ User not found.";
+    return;
+  }
+
+  if (allUsers[userIndex].password !== current) {
+    msg.classList.add("error");
+    msg.textContent = "❌ Current password is incorrect.";
+    return;
+  }
+
+  // Save new password
+  allUsers[userIndex].password = newPass;
+  localStorage.setItem("users", JSON.stringify(allUsers));
+
+  msg.classList.add("success");
+  msg.textContent = "✅ Password updated successfully!";
+
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
 }

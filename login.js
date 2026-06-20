@@ -3,33 +3,37 @@ const form = document.getElementById("loginForm");
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-  const role = document.getElementById("role").value;
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  // Basic validation
-  if (!username || !password || !role) {
+  if (!username || !password) {
     alert("Please fill in all fields");
     return;
   }
 
-  // Hardcoded credentials
-  const admin = {
-    username: "admin",
-    password: localStorage.getItem("adminPassword") || "admin123",
-  };
-  const user = {
-    username: "user",
-    password: localStorage.getItem("userPassword") || "user123",
-  };
+  // Split username by "/"
+  const parts = username.split("/");
 
-  if (role === "admin") {
-    if (username === admin.username && password === admin.password) {
+  // Must have exactly two parts e.g. "admin/00" or "ismael/3"
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    alert("Invalid username format. Use: name/floor (e.g. ismael/3)");
+    return;
+  }
+
+  const identifier = parts[1]; // "00" for admin, floor number for users
+
+  if (identifier === "00") {
+    // ---- ADMIN LOGIN ----
+    const adminPassword = localStorage.getItem("adminPassword") || "admin123";
+
+    if (parts[0] === "admin" && password === adminPassword) {
+      localStorage.setItem("loggedInUser", username);
       window.location.href = "admin-dashboard.html";
     } else {
       alert("Invalid admin credentials");
     }
-  } else if (role === "user") {
+  } else {
+    // ---- USER LOGIN ----
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const foundUser = users.find(
       (u) => u.username === username && u.password === password,
@@ -39,7 +43,7 @@ form.addEventListener("submit", (e) => {
       localStorage.setItem("loggedInUser", foundUser.username);
       window.location.href = "user-dashboard.html";
     } else {
-      alert("Invalid user credentials");
+      alert("Invalid credentials");
     }
   }
 });

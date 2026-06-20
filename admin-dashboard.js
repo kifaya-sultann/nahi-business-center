@@ -22,11 +22,9 @@ document.getElementById("logout").addEventListener("click", () => {
 // Data
 let users = JSON.parse(localStorage.getItem("users")) || [];
 let payments = JSON.parse(localStorage.getItem("payments")) || [];
-let requests = JSON.parse(localStorage.getItem("requests")) || [];
 let spaces = JSON.parse(localStorage.getItem("spaces")) || [];
 let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
 let pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
-let rejectTargetId = null;
 
 // Load on start
 window.addEventListener("load", () => {
@@ -40,7 +38,6 @@ window.addEventListener("load", () => {
   updateDashboard();
   renderUsers();
   renderPayments();
-  renderRequests();
   renderServiceRequests();
   renderSpaces();
   renderExpenses();
@@ -60,19 +57,29 @@ function calcAmount() {
 }
 
 function toggleManualAmount() {
-  const checkbox = document.getElementById("manualAmount");
+  const btn = document.getElementById("manualToggleBtn");
   const amountField = document.getElementById("amount");
-  if (checkbox.checked) {
+  const isManual = amountField.hasAttribute("readonly");
+
+  if (isManual) {
     amountField.removeAttribute("readonly");
     amountField.placeholder = "Enter amount manually";
     amountField.value = "";
     amountField.style.background = "#fff";
     amountField.style.cursor = "text";
+    btn.textContent = "🔄 Auto";
+    btn.style.background = "#0f3d2e";
+    btn.style.color = "white";
+    btn.style.borderColor = "#0f3d2e";
   } else {
     amountField.setAttribute("readonly", true);
     amountField.placeholder = "Amount (auto)";
     amountField.style.background = "#f0f0f0";
     amountField.style.cursor = "not-allowed";
+    btn.textContent = "✏️ Manual";
+    btn.style.background = "#e2e8f0";
+    btn.style.color = "#555";
+    btn.style.borderColor = "#ddd";
     calcAmount();
   }
 }
@@ -172,7 +179,9 @@ function saveUser() {
     return;
   }
 
-  const manualAmount = document.getElementById("manualAmount").checked;
+  const manualAmount = !document
+    .getElementById("amount")
+    .hasAttribute("readonly");
   const amountValue = document
     .getElementById("amount")
     .value.replace("$", "")
@@ -185,6 +194,11 @@ function saveUser() {
     alert("Please enter a valid amount");
     return;
   }
+
+  // *** FIX: grab old username BEFORE updating ***
+  const oldUsername = id
+    ? users.find((u) => u.id == id)?.username || null
+    : null;
 
   if (id) {
     const index = users.findIndex((u) => u.id == id);
@@ -216,8 +230,29 @@ function saveUser() {
   }
 
   localStorage.setItem("users", JSON.stringify(users));
+
+  // *** FIX: if username changed, update payments and service requests ***
+  if (oldUsername && oldUsername !== username) {
+    payments = payments.map((p) =>
+      p.tenant === oldUsername ? { ...p, tenant: username } : p,
+    );
+    localStorage.setItem("payments", JSON.stringify(payments));
+
+    let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
+    myRequests = myRequests.map((r) =>
+      r.tenant === oldUsername ? { ...r, tenant: username } : r,
+    );
+    localStorage.setItem("myRequests", JSON.stringify(myRequests));
+
+    // Also update loggedInUser if they're currently logged in
+    if (localStorage.getItem("loggedInUser") === oldUsername) {
+      localStorage.setItem("loggedInUser", username);
+    }
+  }
+
   clearForm();
   renderUsers();
+  renderPayments();
   updateDashboard();
 }
 
@@ -367,8 +402,16 @@ function clearForm() {
   document.getElementById("space").value = "";
   document.getElementById("period").value = "";
   document.getElementById("amount").value = "";
-  document.getElementById("manualAmount").checked = false;
-  toggleManualAmount();
+  const amountField = document.getElementById("amount");
+  const btn = document.getElementById("manualToggleBtn");
+  amountField.setAttribute("readonly", true);
+  amountField.placeholder = "Amount (auto)";
+  amountField.style.background = "#f0f0f0";
+  amountField.style.cursor = "not-allowed";
+  btn.textContent = "✏️ Manual";
+  btn.style.background = "#e2e8f0";
+  btn.style.color = "#555";
+  btn.style.borderColor = "#ddd";
 }
 
 // Update Dashboard
@@ -447,114 +490,6 @@ function updateDashboard() {
   if (!hasOverdue) {
     overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
   }
-}
-
-// Render Requests
-function renderRequests() {
-  requests = JSON.parse(localStorage.getItem("requests")) || [];
-  const table = document.getElementById("requestsTable");
-  table.innerHTML = "";
-  if (requests.length === 0) {
-    table.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#999;padding:20px;">No requests yet</td></tr>`;
-  } else {
-    [...requests].reverse().forEach((r) => {
-      let statusBadge = "";
-      if (r.status === "Pending") {
-        statusBadge = `<span style="color:#d97706;font-weight:bold">⏳ Pending</span>`;
-      } else if (r.status === "Accepted") {
-        statusBadge = `<span style="color:#22c55e;font-weight:bold">✅ Accepted</span>`;
-      } else {
-        statusBadge = `<span style="color:#e53e3e;font-weight:bold">❌ Rejected</span>`;
-      }
-      let actionsHTML = "";
-      if (r.status === "Pending") {
-        actionsHTML = `
-          <button class="btn-paid" onclick="acceptRequest(${r.id})">✅ Accept</button>
-          <button class="btn-delete" onclick="openRejectModal(${r.id})">❌ Reject</button>
-        `;
-      } else {
-        actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
-      }
-      table.innerHTML += `
-        <tr>
-          <td>${r.id}</td>
-          <td>${r.name}</td>
-          <td>${r.email}</td>
-          <td>${r.phone}</td>
-          <td>${r.space} m2</td>
-          <td>${r.message || "—"}</td>
-          <td>${r.date}</td>
-          <td>${statusBadge}</td>
-          <td style="font-size:12px;color:#666;">${r.reason || "—"}</td>
-          <td>${actionsHTML}</td>
-        </tr>
-      `;
-    });
-  }
-  document.getElementById("totalRequests").textContent = requests.length;
-  document.getElementById("pendingRequests").textContent = requests.filter(
-    (r) => r.status === "Pending",
-  ).length;
-  document.getElementById("acceptedRequests").textContent = requests.filter(
-    (r) => r.status === "Accepted",
-  ).length;
-  document.getElementById("rejectedRequests").textContent = requests.filter(
-    (r) => r.status === "Rejected",
-  ).length;
-  const pending = requests.filter((r) => r.status === "Pending").length;
-  const badge = document.getElementById("requestBadge");
-  if (pending > 0) {
-    badge.style.display = "inline-block";
-    badge.textContent = pending;
-  } else {
-    badge.style.display = "none";
-  }
-}
-
-// Accept Request
-function acceptRequest(id) {
-  if (!confirm("Accept this request and add as user?")) return;
-  const r = requests.find((r) => r.id === id);
-  r.status = "Accepted";
-  localStorage.setItem("requests", JSON.stringify(requests));
-  document.getElementById("username").value = r.name;
-  document.getElementById("email").value = r.email;
-  document.getElementById("phone").value = r.phone;
-  document.getElementById("space").value = r.space;
-  pages.forEach((p) => p.classList.remove("active"));
-  document.getElementById("users").classList.add("active");
-  links.forEach((l) => l.classList.remove("active"));
-  document.querySelector('[data-page="users"]').classList.add("active");
-  renderRequests();
-  alert("✅ Request accepted! Please complete the user form and save.");
-}
-
-// Open Reject Modal
-function openRejectModal(id) {
-  rejectTargetId = id;
-  document.getElementById("rejectReason").value = "";
-  document.getElementById("rejectModal").style.display = "flex";
-}
-
-// Close Reject Modal
-function closeRejectModal() {
-  document.getElementById("rejectModal").style.display = "none";
-  rejectTargetId = null;
-}
-
-// Confirm Reject
-function confirmReject() {
-  const reason = document.getElementById("rejectReason").value.trim();
-  if (!reason) {
-    alert("Please enter a reason for rejection");
-    return;
-  }
-  const r = requests.find((r) => r.id === rejectTargetId);
-  r.status = "Rejected";
-  r.reason = reason;
-  localStorage.setItem("requests", JSON.stringify(requests));
-  closeRejectModal();
-  renderRequests();
 }
 
 // Render Service Requests
@@ -716,36 +651,80 @@ function clearSpaceForm() {
 // Save Expense
 function saveExpense() {
   const id = document.getElementById("expenseId").value;
+  const date =
+    document.getElementById("expenseDate").value ||
+    new Date().toISOString().split("T")[0];
   const name = document.getElementById("expenseName").value.trim();
   const reason = document.getElementById("expenseReason").value.trim();
   const amount = parseFloat(document.getElementById("expenseAmount").value);
-  const date = document.getElementById("expenseDate").value;
-  if (!name || !reason || !amount || !date) {
+  const period = parseInt(document.getElementById("expensePeriod").value);
+
+  if (!name || !reason || !amount || !period) {
     alert("Please fill all fields");
     return;
   }
+
+  const paidDate = new Date(date);
+  paidDate.setDate(paidDate.getDate() + period);
+  const dueDate = paidDate.toLocaleDateString();
+  const dueDateRaw = paidDate.toISOString();
+
   if (id) {
     const index = expenses.findIndex((e) => e.id == id);
-    expenses[index] = { ...expenses[index], name, reason, amount, date };
+    expenses[index] = {
+      ...expenses[index],
+      name,
+      reason,
+      amount,
+      date,
+      period,
+      dueDate,
+      dueDateRaw,
+    };
   } else {
     const newId =
       expenses.length > 0 ? Math.max(...expenses.map((e) => e.id)) + 1 : 1;
-    expenses.push({ id: newId, name, reason, amount, date });
+    expenses.push({
+      id: newId,
+      name,
+      reason,
+      amount,
+      date,
+      period,
+      dueDate,
+      dueDateRaw,
+    });
   }
+
   localStorage.setItem("expenses", JSON.stringify(expenses));
   clearExpenseForm();
   renderExpenses();
 }
-
 // Render Expenses
 function renderExpenses() {
   expenses = JSON.parse(localStorage.getItem("expenses")) || [];
   const table = document.getElementById("expensesTable");
   table.innerHTML = "";
+
   if (expenses.length === 0) {
-    table.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No expenses recorded yet</td></tr>`;
+    table.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;">No expenses recorded yet</td></tr>`;
   } else {
     [...expenses].reverse().forEach((e) => {
+      let countdownHTML = "—";
+      if (e.dueDateRaw) {
+        const due = new Date(e.dueDateRaw);
+        const today = new Date();
+        const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+        if (diff > 0) {
+          countdownHTML = `<span style="color:#22c55e;font-weight:bold;">⏳ ${diff} days left</span>`;
+        } else if (diff === 0) {
+          countdownHTML = `<span style="color:#f97316;font-weight:bold;">⚠️ Due Today!</span>`;
+        } else {
+          countdownHTML = `<span style="color:#e53e3e;font-weight:bold;">🔴 Overdue by ${Math.abs(diff)} days</span>`;
+        }
+      }
+      const periodLabel =
+        e.period === 15 ? "15 Days" : e.period === 30 ? "1 Month" : "3 Months";
       table.innerHTML += `
         <tr>
           <td>${e.id}</td>
@@ -753,6 +732,9 @@ function renderExpenses() {
           <td>${e.reason}</td>
           <td>$${parseFloat(e.amount).toFixed(2)}</td>
           <td>${e.date}</td>
+          <td>${periodLabel}</td>
+          <td>${e.dueDate || "—"}</td>
+          <td>${countdownHTML}</td>
           <td>
             <button class="btn-edit" onclick="editExpense(${e.id})">Edit</button>
             <button class="btn-delete" onclick="deleteExpense(${e.id})">Delete</button>
@@ -761,6 +743,7 @@ function renderExpenses() {
       `;
     });
   }
+
   const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
   document.getElementById("totalExpenses").textContent = "$" + total.toFixed(2);
   document.getElementById("totalExpenseRecords").textContent = expenses.length;
@@ -774,6 +757,7 @@ function editExpense(id) {
   document.getElementById("expenseReason").value = e.reason;
   document.getElementById("expenseAmount").value = e.amount;
   document.getElementById("expenseDate").value = e.date;
+  document.getElementById("expensePeriod").value = e.period || "";
 }
 
 // Delete Expense
@@ -791,4 +775,5 @@ function clearExpenseForm() {
   document.getElementById("expenseReason").value = "";
   document.getElementById("expenseAmount").value = "";
   document.getElementById("expenseDate").value = "";
+  document.getElementById("expensePeriod").value = "";
 }

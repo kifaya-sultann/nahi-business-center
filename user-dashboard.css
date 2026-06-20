@@ -216,3 +216,138 @@ tbody tr:hover {
 .telegram-btn:hover {
   background: #1a8bbf;
 }
+
+/* ===================== */
+/* Settings              */
+/* ===================== */
+.settings-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.settings-card-header {
+  background: #0f3d2e;
+  padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-card-header h2 {
+  color: white;
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.settings-card-header .lock-icon {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.settings-card-body {
+  padding: 30px;
+}
+
+.settings-description {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 24px 0;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 480px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  padding: 11px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  color: #333;
+  background: #fafafa;
+}
+
+.form-group input:focus {
+  border-color: #0f3d2e;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.08);
+}
+
+.password-msg {
+  font-size: 13px;
+  min-height: 18px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.password-msg.error {
+  color: #e74c3c;
+}
+
+.password-msg.success {
+  color: #27ae60;
+}
+
+.settings-btn {
+  padding: 12px 28px;
+  background-color: #0f3d2e;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition:
+    background-color 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
+  align-self: flex-start;
+  box-shadow: 0 2px 6px rgba(15, 61, 46, 0.3);
+}
+
+.settings-btn:hover {
+  background-color: #145a3a;
+  box-shadow: 0 4px 12px rgba(15, 61, 46, 0.35);
+  transform: translateY(-1px);
+}
+
+.settings-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(15, 61, 46, 0.3);
+}
