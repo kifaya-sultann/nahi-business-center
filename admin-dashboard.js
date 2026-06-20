@@ -24,6 +24,7 @@ let users = JSON.parse(localStorage.getItem("users")) || [];
 let payments = JSON.parse(localStorage.getItem("payments")) || [];
 let requests = JSON.parse(localStorage.getItem("requests")) || [];
 let spaces = JSON.parse(localStorage.getItem("spaces")) || [];
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
 let pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
 let rejectTargetId = null;
 
@@ -36,13 +37,13 @@ window.addEventListener("load", () => {
     localStorage.getItem("bizEmail") || "";
   document.getElementById("settingsTelegram").value =
     localStorage.getItem("bizTelegram") || "";
-
   updateDashboard();
   renderUsers();
   renderPayments();
   renderRequests();
   renderServiceRequests();
   renderSpaces();
+  renderExpenses();
 });
 
 // Auto calculate amount
@@ -56,6 +57,24 @@ function calcAmount() {
   const amount = space * pricePerM2 * period;
   document.getElementById("amount").value =
     amount > 0 ? "$" + amount.toFixed(2) : "";
+}
+
+function toggleManualAmount() {
+  const checkbox = document.getElementById("manualAmount");
+  const amountField = document.getElementById("amount");
+  if (checkbox.checked) {
+    amountField.removeAttribute("readonly");
+    amountField.placeholder = "Enter amount manually";
+    amountField.value = "";
+    amountField.style.background = "#fff";
+    amountField.style.cursor = "text";
+  } else {
+    amountField.setAttribute("readonly", true);
+    amountField.placeholder = "Amount (auto)";
+    amountField.style.background = "#f0f0f0";
+    amountField.style.cursor = "not-allowed";
+    calcAmount();
+  }
 }
 
 function calcSpacePrice() {
@@ -82,7 +101,6 @@ function saveBusinessInfo() {
   const phone = document.getElementById("settingsPhone").value.trim();
   const email = document.getElementById("settingsEmail").value.trim();
   const telegram = document.getElementById("settingsTelegram").value.trim();
-
   if (!phone || !email || !telegram) {
     alert("Please fill all fields");
     return;
@@ -90,7 +108,6 @@ function saveBusinessInfo() {
   localStorage.setItem("bizPhone", phone);
   localStorage.setItem("bizEmail", email);
   localStorage.setItem("bizTelegram", telegram);
-
   showMsg("businessInfoMsg", "✅ Business info saved!", "green");
 }
 
@@ -137,14 +154,38 @@ function saveUser() {
   const username = document.getElementById("username").value.trim();
   const email = document.getElementById("email").value.trim();
   const phone = document.getElementById("phone").value.trim();
+  const fanfin = document.getElementById("fanfin").value.trim();
   const password = document.getElementById("password").value.trim();
   const space = parseFloat(document.getElementById("space").value);
   const period = parseInt(document.getElementById("period").value);
-  if (!username || !email || !phone || !password || !space || !period) {
+
+  if (
+    !username ||
+    !email ||
+    !phone ||
+    !fanfin ||
+    !password ||
+    !space ||
+    !period
+  ) {
     alert("Please fill all fields");
     return;
   }
-  const amount = space * pricePerM2 * period;
+
+  const manualAmount = document.getElementById("manualAmount").checked;
+  const amountValue = document
+    .getElementById("amount")
+    .value.replace("$", "")
+    .trim();
+  const amount = manualAmount
+    ? parseFloat(amountValue)
+    : space * pricePerM2 * period;
+
+  if (isNaN(amount) || amount <= 0) {
+    alert("Please enter a valid amount");
+    return;
+  }
+
   if (id) {
     const index = users.findIndex((u) => u.id == id);
     users[index] = {
@@ -152,6 +193,7 @@ function saveUser() {
       username,
       email,
       phone,
+      fanfin,
       password,
       space,
       period,
@@ -165,12 +207,14 @@ function saveUser() {
       username,
       email,
       phone,
+      fanfin,
       password,
       space,
       period,
       amount,
     });
   }
+
   localStorage.setItem("users", JSON.stringify(users));
   clearForm();
   renderUsers();
@@ -204,6 +248,7 @@ function renderUsers() {
         <td>${user.username}</td>
         <td>${user.email}</td>
         <td>${user.phone}</td>
+        <td>${user.fanfin || "—"}</td>
         <td>${user.password}</td>
         <td>${user.space} m2</td>
         <td>${user.period} month(s)</td>
@@ -282,6 +327,7 @@ function editUser(id) {
   document.getElementById("username").value = user.username;
   document.getElementById("email").value = user.email;
   document.getElementById("phone").value = user.phone;
+  document.getElementById("fanfin").value = user.fanfin || "";
   document.getElementById("password").value = user.password;
   document.getElementById("space").value = user.space;
   document.getElementById("period").value = user.period;
@@ -316,10 +362,13 @@ function clearForm() {
   document.getElementById("username").value = "";
   document.getElementById("email").value = "";
   document.getElementById("phone").value = "";
+  document.getElementById("fanfin").value = "";
   document.getElementById("password").value = "";
   document.getElementById("space").value = "";
   document.getElementById("period").value = "";
   document.getElementById("amount").value = "";
+  document.getElementById("manualAmount").checked = false;
+  toggleManualAmount();
 }
 
 // Update Dashboard
@@ -484,8 +533,7 @@ function acceptRequest(id) {
 function openRejectModal(id) {
   rejectTargetId = id;
   document.getElementById("rejectReason").value = "";
-  const modal = document.getElementById("rejectModal");
-  modal.style.display = "flex";
+  document.getElementById("rejectModal").style.display = "flex";
 }
 
 // Close Reject Modal
@@ -663,4 +711,84 @@ function clearSpaceForm() {
   document.getElementById("spaceSize").value = "";
   document.getElementById("spaceStatus").value = "Available";
   document.getElementById("spacePrice").value = "";
+}
+
+// Save Expense
+function saveExpense() {
+  const id = document.getElementById("expenseId").value;
+  const name = document.getElementById("expenseName").value.trim();
+  const reason = document.getElementById("expenseReason").value.trim();
+  const amount = parseFloat(document.getElementById("expenseAmount").value);
+  const date = document.getElementById("expenseDate").value;
+  if (!name || !reason || !amount || !date) {
+    alert("Please fill all fields");
+    return;
+  }
+  if (id) {
+    const index = expenses.findIndex((e) => e.id == id);
+    expenses[index] = { ...expenses[index], name, reason, amount, date };
+  } else {
+    const newId =
+      expenses.length > 0 ? Math.max(...expenses.map((e) => e.id)) + 1 : 1;
+    expenses.push({ id: newId, name, reason, amount, date });
+  }
+  localStorage.setItem("expenses", JSON.stringify(expenses));
+  clearExpenseForm();
+  renderExpenses();
+}
+
+// Render Expenses
+function renderExpenses() {
+  expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+  const table = document.getElementById("expensesTable");
+  table.innerHTML = "";
+  if (expenses.length === 0) {
+    table.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No expenses recorded yet</td></tr>`;
+  } else {
+    [...expenses].reverse().forEach((e) => {
+      table.innerHTML += `
+        <tr>
+          <td>${e.id}</td>
+          <td>${e.name}</td>
+          <td>${e.reason}</td>
+          <td>$${parseFloat(e.amount).toFixed(2)}</td>
+          <td>${e.date}</td>
+          <td>
+            <button class="btn-edit" onclick="editExpense(${e.id})">Edit</button>
+            <button class="btn-delete" onclick="deleteExpense(${e.id})">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+  const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  document.getElementById("totalExpenses").textContent = "$" + total.toFixed(2);
+  document.getElementById("totalExpenseRecords").textContent = expenses.length;
+}
+
+// Edit Expense
+function editExpense(id) {
+  const e = expenses.find((e) => e.id === id);
+  document.getElementById("expenseId").value = e.id;
+  document.getElementById("expenseName").value = e.name;
+  document.getElementById("expenseReason").value = e.reason;
+  document.getElementById("expenseAmount").value = e.amount;
+  document.getElementById("expenseDate").value = e.date;
+}
+
+// Delete Expense
+function deleteExpense(id) {
+  if (!confirm("Are you sure you want to delete this expense?")) return;
+  expenses = expenses.filter((e) => e.id !== id);
+  localStorage.setItem("expenses", JSON.stringify(expenses));
+  renderExpenses();
+}
+
+// Clear Expense Form
+function clearExpenseForm() {
+  document.getElementById("expenseId").value = "";
+  document.getElementById("expenseName").value = "";
+  document.getElementById("expenseReason").value = "";
+  document.getElementById("expenseAmount").value = "";
+  document.getElementById("expenseDate").value = "";
 }

@@ -17,14 +17,15 @@
           >
           <a href="#" class="nav-link" data-page="users">👥 Users</a>
           <a href="#" class="nav-link" data-page="payments">💳 Payments</a>
+          <a href="#" class="nav-link" data-page="expenses">💸 Expenses</a>
           <a href="#" class="nav-link" data-page="requests"
             >📋 Rental Requests
             <span
               class="nav-badge"
               id="requestBadge"
               style="display: none"
-            ></span
-          ></a>
+            ></span>
+          </a>
           <a href="#" class="nav-link" data-page="spaces">🏠 Spaces</a>
           <a href="#" class="nav-link" data-page="servicerequests"
             >🔧 Service Requests
@@ -32,8 +33,8 @@
               class="nav-badge"
               id="serviceRequestBadge"
               style="display: none"
-            ></span
-          ></a>
+            ></span>
+          </a>
           <a href="#" class="nav-link" data-page="settings">⚙️ Settings</a>
           <a href="#" id="logout">🚪 Logout</a>
         </nav>
@@ -63,7 +64,6 @@
             </div>
           </div>
 
-          <!-- Recent Payments -->
           <h2 style="margin-top: 30px; margin-bottom: 10px">Recent Payments</h2>
           <div style="overflow-x: auto">
             <table>
@@ -79,7 +79,6 @@
             </table>
           </div>
 
-          <!-- Overdue Tenants -->
           <h2 style="margin-top: 30px; margin-bottom: 10px">
             ⚠️ Overdue Tenants
           </h2>
@@ -106,6 +105,7 @@
             <input type="text" id="username" placeholder="Username" />
             <input type="email" id="email" placeholder="Email" />
             <input type="text" id="phone" placeholder="Phone Number" />
+            <input type="text" id="fanfin" placeholder="FAN/FIN Number" />
             <input type="password" id="password" placeholder="Password" />
             <input type="number" id="space" placeholder="Space (m2)" min="1" />
             <select id="period">
@@ -120,6 +120,14 @@
               placeholder="Amount (auto)"
               readonly
             />
+            <label class="manual-label">
+              <input
+                type="checkbox"
+                id="manualAmount"
+                onchange="toggleManualAmount()"
+              />
+              Set amount manually
+            </label>
             <button onclick="saveUser()">Save User</button>
             <button class="btn-cancel" onclick="clearForm()">Cancel</button>
           </div>
@@ -131,6 +139,7 @@
                   <th>Username</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th>FAN/FIN</th>
                   <th>Password</th>
                   <th>Space (m2)</th>
                   <th>Period</th>
@@ -147,27 +156,81 @@
         <!-- Payments -->
         <section id="payments" class="page">
           <h1>Payment History</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>user</th>
-                <th>Amount</th>
-                <th>Space (m2)</th>
-                <th>Period</th>
-                <th>Date Paid</th>
-                <th>Next Due</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="paymentTable"></tbody>
-          </table>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Space (m2)</th>
+                  <th>Period</th>
+                  <th>Date Paid</th>
+                  <th>Next Due</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="paymentTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Expenses -->
+        <section id="expenses" class="page">
+          <h1>Expenses</h1>
+          <div class="cards" style="margin-bottom: 20px">
+            <div class="card">
+              <div class="card-label">💸 Total Expenses</div>
+              <div class="card-value" id="totalExpenses">$0</div>
+            </div>
+            <div class="card">
+              <div class="card-label">📋 Total Records</div>
+              <div class="card-value" id="totalExpenseRecords">0</div>
+            </div>
+          </div>
+          <div class="user-form">
+            <input type="hidden" id="expenseId" />
+            <input
+              type="text"
+              id="expenseName"
+              placeholder="Name (e.g. Electricity Bill)"
+            />
+            <input
+              type="text"
+              id="expenseReason"
+              placeholder="Reason / Description"
+            />
+            <input
+              type="number"
+              id="expenseAmount"
+              placeholder="Amount ($)"
+              min="0"
+            />
+            <input type="date" id="expenseDate" />
+            <button onclick="saveExpense()">Save Expense</button>
+            <button class="btn-cancel" onclick="clearExpenseForm()">
+              Cancel
+            </button>
+          </div>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Reason</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="expensesTable"></tbody>
+            </table>
+          </div>
         </section>
 
         <!-- Requests -->
-        <!-- Requests -->
         <section id="requests" class="page">
           <h1>Rental Requests</h1>
-
           <div class="cards" style="margin-bottom: 20px">
             <div class="card">
               <div class="card-label">📋 Total Requests</div>
@@ -186,7 +249,6 @@
               <div class="card-value" id="rejectedRequests">0</div>
             </div>
           </div>
-
           <div style="overflow-x: auto">
             <table>
               <thead>
@@ -211,7 +273,6 @@
         <!-- Service Requests -->
         <section id="servicerequests" class="page">
           <h1>Service Requests</h1>
-
           <div class="cards" style="margin-bottom: 20px">
             <div class="card">
               <div class="card-label">🔧 Total</div>
@@ -230,7 +291,6 @@
               <div class="card-value" id="doneServiceReqs">0</div>
             </div>
           </div>
-
           <div style="overflow-x: auto">
             <table>
               <thead>
@@ -248,10 +308,10 @@
             </table>
           </div>
         </section>
+
         <!-- Spaces -->
         <section id="spaces" class="page">
           <h1>Spaces Management</h1>
-
           <div class="user-form">
             <input type="hidden" id="spaceId" />
             <input
@@ -283,7 +343,6 @@
               Cancel
             </button>
           </div>
-
           <div style="overflow-x: auto">
             <table>
               <thead>
@@ -301,6 +360,7 @@
             </table>
           </div>
         </section>
+
         <!-- Reject Modal -->
         <div
           id="rejectModal"
@@ -380,11 +440,8 @@
         </div>
 
         <!-- Settings -->
-        <!-- Settings -->
         <section id="settings" class="page">
           <h1>Settings</h1>
-
-          <!-- Pricing -->
           <div class="settings-card">
             <h3>💰 Pricing</h3>
             <div class="settings-form">
@@ -394,8 +451,6 @@
               <p id="settingsMsg"></p>
             </div>
           </div>
-
-          <!-- Business Info -->
           <div class="settings-card">
             <h3>🏢 Business Info</h3>
             <div class="settings-form">
@@ -409,8 +464,6 @@
               <p id="businessInfoMsg"></p>
             </div>
           </div>
-
-          <!-- Change Password -->
           <div class="settings-card">
             <h3>🔑 Change Admin Password</h3>
             <div class="settings-form">

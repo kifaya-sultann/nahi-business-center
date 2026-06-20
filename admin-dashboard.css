@@ -22,6 +22,7 @@ body {
   top: 0;
   left: 0;
   z-index: 100;
+  overflow-y: auto;
 }
 
 .sidebar h2 {
@@ -57,7 +58,6 @@ body {
 .page {
   display: none;
 }
-
 .page.active {
   display: block;
 }
@@ -67,6 +67,7 @@ body {
   display: flex;
   gap: 15px;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 .card {
@@ -74,11 +75,13 @@ body {
   padding: 20px;
   border-radius: 10px;
   flex: 1;
+  min-width: 150px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .card-label {
   font-size: 13px;
   color: #666;
@@ -103,6 +106,7 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  align-items: center;
 }
 
 .user-form input,
@@ -138,9 +142,30 @@ body {
 .btn-cancel {
   background: #999 !important;
 }
-
 .btn-cancel:hover {
   background: #777 !important;
+}
+
+/* Checkbox label */
+.manual-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+  white-space: nowrap;
+  cursor: pointer;
+  background: #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.manual-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #0f3d2e;
 }
 
 /* Table */
@@ -170,33 +195,28 @@ tbody tr:hover {
   background: #f9f9f9;
 }
 
+/* Buttons */
+.btn-delete,
+.btn-edit,
+.btn-paid {
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 2px;
+  font-size: 13px;
+}
+
 .btn-delete {
   background: #e53e3e;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
 }
-
 .btn-edit {
   background: #d97706;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-right: 5px;
 }
-
 .btn-paid {
   background: #22c55e;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-right: 5px;
 }
 
 .btn-delete:hover {
@@ -209,7 +229,6 @@ tbody tr:hover {
   background: #16a34a;
 }
 
-/* Settings */
 /* Settings */
 .settings-card {
   background: white;
@@ -269,11 +288,12 @@ tbody tr:hover {
 .settings-form button:hover {
   background: #145a3a;
 }
-
 .settings-form p {
   font-size: 13px;
   margin: 0;
 }
+
+/* Nav Badge */
 .nav-badge {
   background: #e53e3e;
   color: white;
