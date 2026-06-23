@@ -357,3 +357,71 @@
     padding: 40px 20px;
   }
 }
+/* Floor Filters */
+.floor-filters {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.filter-btn.active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #0b2e1e;
+}
+/* Additional Mobile Fixes */
+@media (max-width: 900px) {
+  .service-hero h1 {
+    font-size: 32px;
+  }
+  .services-section {
+    padding: 50px 25px;
+  }
+  .cta-banner {
+    padding: 35px 25px;
+  }
+}
+
+@media (max-width: 600px) {
+  .service-hero {
+    padding: 70px 20px;
+  }
+  .service-hero h1 {
+    font-size: 26px;
+  }
+  .service-hero p {
+    font-size: 14px;
+  }
+  .services-intro h2 {
+    font-size: 24px;
+  }
+  .cta-banner {
+    padding: 30px 20px;
+  }
+  .cta-content h2 {
+    font-size: 20px;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+}

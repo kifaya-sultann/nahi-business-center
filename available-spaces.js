@@ -1,7 +1,7 @@
 window.addEventListener("load", () => {
   const spaces = JSON.parse(localStorage.getItem("spaces")) || [];
-  const pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
   const container = document.getElementById("availableSpaces");
+  const filterContainer = document.getElementById("floorFilters");
 
   const available = spaces.filter((s) => s.status === "Available");
 
@@ -10,30 +10,53 @@ window.addEventListener("load", () => {
     return;
   }
 
-  available.forEach((s) => {
-    const price = parseFloat(s.price) || parseFloat(s.size) * pricePerM2;
-    container.innerHTML += `
-      <div class="space-card">
-        <div class="space-card-header">
-          <span class="space-card-title">Floor ${s.floor} — Room ${s.room}</span>
-          <span class="space-badge-available">✅ Available</span>
+  // Get unique floors
+  const floors = [...new Set(available.map((s) => s.floor))].sort();
+
+  // Build filter buttons
+  filterContainer.innerHTML = `
+    <button class="filter-btn active" onclick="filterFloor('all')">All</button>
+    ${floors.map((f) => `<button class="filter-btn" onclick="filterFloor(${f})">Floor ${f}</button>`).join("")}
+  `;
+
+  // Render all spaces
+  renderSpaces(available);
+
+  window.filterFloor = function (floor) {
+    // Update active button
+    document
+      .querySelectorAll(".filter-btn")
+      .forEach((btn) => btn.classList.remove("active"));
+    event.target.classList.add("active");
+
+    // Filter and render
+    const filtered =
+      floor === "all" ? available : available.filter((s) => s.floor === floor);
+    renderSpaces(filtered);
+  };
+
+  function renderSpaces(list) {
+    container.innerHTML = "";
+    if (list.length === 0) {
+      container.innerHTML = `<div class="no-spaces">No spaces available on this floor.</div>`;
+      return;
+    }
+    list.forEach((s) => {
+      container.innerHTML += `
+        <div class="space-card">
+          <div class="space-card-header">
+            <span class="space-card-title">Floor ${s.floor}</span>
+            <span class="space-badge-available">✅ Available</span>
+          </div>
+          <div class="space-card-details">
+            <div class="space-detail">
+              <span>Size</span>
+              <span>${s.size} m2</span>
+            </div>
+          </div>
+          <a href="contact.html" class="space-request-btn">Contact Us →</a>
         </div>
-        <div class="space-card-details">
-          <div class="space-detail">
-            <span>Size</span>
-            <span>${s.size} m2</span>
-          </div>
-          <div class="space-detail">
-            <span>Price per m2</span>
-            <span>$${pricePerM2}/m2</span>
-          </div>
-          <div class="space-detail">
-            <span>Monthly Price</span>
-            <span>$${price.toFixed(2)}/month</span>
-          </div>
-        </div>
-        <a href="contact.html" class="space-request-btn">Contact Us →</a>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
 });

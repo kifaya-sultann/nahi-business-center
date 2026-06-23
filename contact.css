@@ -174,3 +174,33 @@
 .contact-card a.contact-value:hover {
   color: #22c55e;
 }
+/* Additional Mobile Fixes */
+@media (max-width: 768px) {
+  .contact-hero h1 {
+    font-size: 32px;
+  }
+  .contact-hero p {
+    font-size: 14px;
+  }
+  .contact-section {
+    padding: 40px 15px;
+  }
+  .map-container iframe {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-hero {
+    padding: 60px 20px;
+  }
+  .contact-hero h1 {
+    font-size: 26px;
+  }
+  .contact-card {
+    padding: 24px 16px;
+  }
+  .map-container iframe {
+    height: 250px;
+  }
+}
