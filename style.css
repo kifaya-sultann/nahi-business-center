@@ -384,3 +384,60 @@ nav a:hover {
     margin-top: 0;
   }
 }
+/* HAMBURGER */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 5px 10px;
+  transition: 0.3s;
+}
+
+.hamburger:hover {
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    padding: 15px 20px;
+    position: relative;
+  }
+
+  .hamburger {
+    display: block;
+  }
+
+  #navMenu {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    background: #0f3d2e;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #navMenu.open {
+    display: flex;
+  }
+
+  #navMenu a {
+    margin: 0;
+    padding: 12px 20px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  #navMenu a::after {
+    display: none;
+  }
+
+  .login-btn {
+    margin: 10px 20px !important;
+    text-align: center;
+    border-radius: 6px;
+  }
+}
