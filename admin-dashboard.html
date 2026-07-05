@@ -92,8 +92,16 @@
 
         <!-- Users -->
         <section id="users" class="page">
-          <h1>Users Management</h1>
-          <div class="user-form">
+    <h1>Users Management</h1>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs">
+  <button class="filter-tab active" onclick="filterUsers('all')">All</button>
+  <button class="filter-tab" onclick="filterUsers('active')">✅ Active</button>
+  <button class="filter-tab" onclick="filterUsers('movedout')">🚪 Moved Out</button>
+</div>
+
+<div class="user-form">      
             <input type="hidden" id="userId" />
             <input type="text" id="username" placeholder="Username" />
             <input type="email" id="email" placeholder="Email" />
@@ -158,6 +166,7 @@
                   <th>Period</th>
                   <th>Amount</th>
                   <th>Countdown</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>

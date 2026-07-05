@@ -392,3 +392,90 @@ tbody tr:hover {
     font-size: 12px;
   }
 }
+.btn-moveout {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 2px;
+  font-size: 13px;
+}
+
+.btn-moveout:hover {
+  background: #4b5563;
+}
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.filter-tab {
+  padding: 8px 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: #f0f0f0;
+}
+
+.filter-tab.active {
+  background: #0f3d2e;
+  color: white;
+  border-color: #0f3d2e;
+}
+.btn-moveout {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 2px;
+  font-size: 13px;
+}
+
+.btn-moveout:hover {
+  background: #4b5563;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.filter-tab {
+  padding: 8px 18px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: #f0f0f0;
+}
+
+.filter-tab.active {
+  background: #0f3d2e;
+  color: white;
+  border-color: #0f3d2e;
+}

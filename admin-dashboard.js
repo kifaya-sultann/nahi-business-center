@@ -60,7 +60,6 @@ function toggleManualAmount() {
   const btn = document.getElementById("manualToggleBtn");
   const amountField = document.getElementById("amount");
   const isManual = amountField.hasAttribute("readonly");
-
   if (isManual) {
     amountField.removeAttribute("readonly");
     amountField.placeholder = "Enter amount manually";
@@ -195,7 +194,6 @@ function saveUser() {
     return;
   }
 
-  // *** FIX: grab old username BEFORE updating ***
   const oldUsername = id
     ? users.find((u) => u.id == id)?.username || null
     : null;
@@ -226,25 +224,22 @@ function saveUser() {
       space,
       period,
       amount,
+      status: "Active",
     });
   }
 
   localStorage.setItem("users", JSON.stringify(users));
 
-  // *** FIX: if username changed, update payments and service requests ***
   if (oldUsername && oldUsername !== username) {
     payments = payments.map((p) =>
       p.tenant === oldUsername ? { ...p, tenant: username } : p,
     );
     localStorage.setItem("payments", JSON.stringify(payments));
-
     let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
     myRequests = myRequests.map((r) =>
       r.tenant === oldUsername ? { ...r, tenant: username } : r,
     );
     localStorage.setItem("myRequests", JSON.stringify(myRequests));
-
-    // Also update loggedInUser if they're currently logged in
     if (localStorage.getItem("loggedInUser") === oldUsername) {
       localStorage.setItem("loggedInUser", username);
     }
@@ -256,11 +251,30 @@ function saveUser() {
   updateDashboard();
 }
 
+// Current filter
+let currentFilter = "all";
+
+function filterUsers(filter) {
+  currentFilter = filter;
+  document
+    .querySelectorAll(".filter-tab")
+    .forEach((tab) => tab.classList.remove("active"));
+  event.target.classList.add("active");
+  renderUsers();
+}
+
 // Render Users Table
 function renderUsers() {
   const table = document.getElementById("userTable");
   table.innerHTML = "";
-  users.forEach((user) => {
+
+  const filtered = users.filter((user) => {
+    if (currentFilter === "active") return user.status !== "Moved Out";
+    if (currentFilter === "movedout") return user.status === "Moved Out";
+    return true;
+  });
+
+  filtered.forEach((user) => {
     const lastPayment = payments
       .filter((p) => p.tenant === user.username)
       .pop();
@@ -277,8 +291,28 @@ function renderUsers() {
         countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
       }
     }
+
+    const statusHTML =
+      user.status === "Moved Out"
+        ? `<span style="color:#999;font-weight:bold;">🚪 Moved Out</span>`
+        : `<span style="color:#22c55e;font-weight:bold;">✅ Active</span>`;
+
+    const actionsHTML =
+      user.status === "Moved Out"
+        ? `
+        <button class="btn-paid" onclick="reactivate(${user.id})">🔄 Reactivate</button>
+        <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
+        <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+      `
+        : `
+        <button class="btn-paid" onclick="markPaid(${user.id})">✅ Paid</button>
+        <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
+        <button class="btn-moveout" onclick="moveOut(${user.id})">🚪 Move Out</button>
+        <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+      `;
+
     table.innerHTML += `
-      <tr>
+      <tr style="${user.status === "Moved Out" ? "opacity:0.6;" : ""}">
         <td>${user.id}</td>
         <td>${user.username}</td>
         <td>${user.email}</td>
@@ -289,11 +323,8 @@ function renderUsers() {
         <td>${user.period} month(s)</td>
         <td>$${user.amount.toFixed(2)}</td>
         <td>${countdownHTML}</td>
-        <td>
-          <button class="btn-paid" onclick="markPaid(${user.id})">✅ Paid</button>
-          <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
-          <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
-        </td>
+        <td>${statusHTML}</td>
+        <td>${actionsHTML}</td>
       </tr>
     `;
   });
@@ -323,6 +354,58 @@ function markPaid(id) {
   alert(
     `✅ ${user.username} marked as paid. Next due: ${dueDate.toLocaleDateString()}`,
   );
+}
+
+// Move Out
+function moveOut(id) {
+  if (
+    !confirm(
+      "Mark this user as Moved Out? Their space will become available again.",
+    )
+  )
+    return;
+  const user = users.find((u) => u.id === id);
+  if (!user) return;
+  user.status = "Moved Out";
+  localStorage.setItem("users", JSON.stringify(users));
+
+  // Extract floor number from username (e.g. "ismael/03" → 3)
+  const parts = user.username.split("/");
+  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : null;
+
+  // Mark matching space as Available
+  let allSpaces = JSON.parse(localStorage.getItem("spaces")) || [];
+  allSpaces = allSpaces.map((s) => {
+    if (floorNumber && s.floor === floorNumber && s.status === "Occupied") {
+      return { ...s, status: "Available" };
+    }
+    return s;
+  });
+  localStorage.setItem("spaces", JSON.stringify(allSpaces));
+  spaces = allSpaces;
+
+  if (localStorage.getItem("loggedInUser") === user.username) {
+    localStorage.removeItem("loggedInUser");
+  }
+
+  renderUsers();
+  renderSpaces();
+  updateDashboard();
+  alert(
+    `🚪 ${user.username} has been marked as Moved Out. Floor ${floorNumber} space is now available.`,
+  );
+}
+
+// Reactivate User
+function reactivate(id) {
+  if (!confirm("Reactivate this user?")) return;
+  const user = users.find((u) => u.id === id);
+  if (!user) return;
+  user.status = "Active";
+  localStorage.setItem("users", JSON.stringify(users));
+  renderUsers();
+  updateDashboard();
+  alert(`✅ ${user.username} has been reactivated!`);
 }
 
 // Render Payments
@@ -416,28 +499,33 @@ function clearForm() {
 
 // Update Dashboard
 function updateDashboard() {
-  document.getElementById("totalUsers").textContent = users.length;
+  document.getElementById("totalUsers").textContent = users.filter(
+    (u) => u.status !== "Moved Out",
+  ).length;
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
   document.getElementById("totalRevenue").textContent =
     "$" + totalRevenue.toFixed(2);
   const today = new Date();
   let overdueCount = 0;
   let dueThisMonth = 0;
-  users.forEach((user) => {
-    const lastPayment = payments
-      .filter((p) => p.tenant === user.username)
-      .pop();
-    if (lastPayment) {
-      const nextDue = new Date(lastPayment.nextDueRaw);
-      const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-      if (diff < 0) overdueCount++;
-      if (diff >= 0 && diff <= 30) dueThisMonth++;
-    } else {
-      overdueCount++;
-    }
-  });
+  users
+    .filter((u) => u.status !== "Moved Out")
+    .forEach((user) => {
+      const lastPayment = payments
+        .filter((p) => p.tenant === user.username)
+        .pop();
+      if (lastPayment) {
+        const nextDue = new Date(lastPayment.nextDueRaw);
+        const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+        if (diff < 0) overdueCount++;
+        if (diff >= 0 && diff <= 30) dueThisMonth++;
+      } else {
+        overdueCount++;
+      }
+    });
   document.getElementById("overdueCount").textContent = overdueCount;
   document.getElementById("dueThisMonth").textContent = dueThisMonth;
+
   const recentTable = document.getElementById("recentPaymentsTable");
   recentTable.innerHTML = "";
   const recent = [...payments].reverse().slice(0, 5);
@@ -455,29 +543,32 @@ function updateDashboard() {
       `;
     });
   }
+
   const overdueTable = document.getElementById("overdueTable");
   overdueTable.innerHTML = "";
   let hasOverdue = false;
-  users.forEach((user) => {
-    const lastPayment = payments
-      .filter((p) => p.tenant === user.username)
-      .pop();
-    let isOverdue = false;
-    let overdueDays = 0;
-    if (lastPayment) {
-      const nextDue = new Date(lastPayment.nextDueRaw);
-      const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-      if (diff < 0) {
+  users
+    .filter((u) => u.status !== "Moved Out")
+    .forEach((user) => {
+      const lastPayment = payments
+        .filter((p) => p.tenant === user.username)
+        .pop();
+      let isOverdue = false;
+      let overdueDays = 0;
+      if (lastPayment) {
+        const nextDue = new Date(lastPayment.nextDueRaw);
+        const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+        if (diff < 0) {
+          isOverdue = true;
+          overdueDays = Math.abs(diff);
+        }
+      } else {
         isOverdue = true;
-        overdueDays = Math.abs(diff);
+        overdueDays = "Never paid";
       }
-    } else {
-      isOverdue = true;
-      overdueDays = "Never paid";
-    }
-    if (isOverdue) {
-      hasOverdue = true;
-      overdueTable.innerHTML += `
+      if (isOverdue) {
+        hasOverdue = true;
+        overdueTable.innerHTML += `
         <tr>
           <td>${user.username}</td>
           <td>${user.phone}</td>
@@ -485,8 +576,8 @@ function updateDashboard() {
           <td><span style="color:#e53e3e;font-weight:bold">${overdueDays === "Never paid" ? "Never paid" : overdueDays + " days"}</span></td>
         </tr>
       `;
-    }
-  });
+      }
+    });
   if (!hasOverdue) {
     overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
   }
@@ -700,6 +791,7 @@ function saveExpense() {
   clearExpenseForm();
   renderExpenses();
 }
+
 // Render Expenses
 function renderExpenses() {
   expenses = JSON.parse(localStorage.getItem("expenses")) || [];
@@ -707,7 +799,7 @@ function renderExpenses() {
   table.innerHTML = "";
 
   if (expenses.length === 0) {
-    table.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;">No expenses recorded yet</td></tr>`;
+    table.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#999;padding:20px;">No expenses recorded yet</td></tr>`;
   } else {
     [...expenses].reverse().forEach((e) => {
       let countdownHTML = "—";
