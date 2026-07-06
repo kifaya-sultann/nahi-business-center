@@ -458,37 +458,97 @@ function reactivate(id) {
   );
 }
 
-// Render Payments
+// Payments pagination
+let currentPaymentPage = 1;
+const paymentsPerPage = 5;
+
 function renderPayments() {
+  const search =
+    document.getElementById("paymentSearch")?.value.toLowerCase() || "";
   const table = document.getElementById("paymentTable");
   table.innerHTML = "";
-  payments.forEach((p) => {
-    const nextDue = new Date(p.nextDueRaw);
-    const today = new Date();
-    const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-    let countdownHTML = "";
-    if (diff > 0) {
-      countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
-    } else if (diff === 0) {
-      countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
-    } else {
-      countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
-    }
-    const isMovedOut = users.find(
-      (u) => u.username === p.tenant && u.status === "Moved Out",
-    );
-    table.innerHTML += `
-      <tr>
-        <td>${p.tenant} ${users.find((u) => u.username === p.tenant && u.status === "Moved Out") ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-        <td>$${p.amount.toFixed(2)}</td>
-        <td>${p.space} m2</td>
-        <td>${p.period} month(s)</td>
-        <td>${p.datePaid}</td>
-        <td>${p.nextDue}</td>
-        <td>${countdownHTML}</td>
-      </tr>
-    `;
-  });
+
+  // Filter by search
+  const filtered = payments.filter((p) =>
+    p.tenant.toLowerCase().includes(search),
+  );
+
+  // Paginate
+  const totalPages = Math.ceil(filtered.length / paymentsPerPage);
+  if (currentPaymentPage > totalPages) currentPaymentPage = 1;
+
+  const start = (currentPaymentPage - 1) * paymentsPerPage;
+  const paginated = filtered.slice(start, start + paymentsPerPage);
+
+  if (paginated.length === 0) {
+    table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No payments found</td></tr>`;
+  } else {
+    paginated.forEach((p) => {
+      const nextDue = new Date(p.nextDueRaw);
+      const today = new Date();
+      const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+      let countdownHTML = "";
+      if (diff > 0) {
+        countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
+      } else if (diff === 0) {
+        countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
+      } else {
+        countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
+      }
+      const isMovedOut = users.find(
+        (u) => u.username === p.tenant && u.status === "Moved Out",
+      );
+      table.innerHTML += `
+        <tr>
+          <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
+          <td>$${p.amount.toFixed(2)}</td>
+          <td>${p.space} m2</td>
+          <td>${p.period} month(s)</td>
+          <td>${p.datePaid}</td>
+          <td>${p.nextDue}</td>
+          <td>${countdownHTML}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // Render pagination buttons
+  const pagination = document.getElementById("paymentPagination");
+  pagination.innerHTML = "";
+
+  if (totalPages <= 1) return;
+
+  // Previous button
+  const prevBtn = document.createElement("button");
+  prevBtn.textContent = "← Prev";
+  prevBtn.disabled = currentPaymentPage === 1;
+  prevBtn.onclick = () => {
+    currentPaymentPage--;
+    renderPayments();
+  };
+  pagination.appendChild(prevBtn);
+
+  // Page number buttons
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    if (i === currentPaymentPage) btn.classList.add("active");
+    btn.onclick = () => {
+      currentPaymentPage = i;
+      renderPayments();
+    };
+    pagination.appendChild(btn);
+  }
+
+  // Next button
+  const nextBtn = document.createElement("button");
+  nextBtn.textContent = "Next →";
+  nextBtn.disabled = currentPaymentPage === totalPages;
+  nextBtn.onclick = () => {
+    currentPaymentPage++;
+    renderPayments();
+  };
+  pagination.appendChild(nextBtn);
 }
 
 // Edit User

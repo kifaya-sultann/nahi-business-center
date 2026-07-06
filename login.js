@@ -43,7 +43,7 @@ form.addEventListener("submit", (e) => {
       (u) => u.username.toLowerCase() === username && u.password === password,
     );
 
-    if (foundUser) {
+    if (foundUser) { 
       localStorage.setItem("loggedInUser", foundUser.username);
       window.location.href = "user-dashboard.html";
     } else {

@@ -201,6 +201,17 @@
         <!-- Payments -->
         <section id="payments" class="page">
           <h1>Payment History</h1>
+
+          <!-- Search Bar -->
+          <div class="payment-search">
+            <input
+              type="text"
+              id="paymentSearch"
+              placeholder="🔍 Search by username..."
+              oninput="renderPayments()"
+            />
+          </div>
+
           <div style="overflow-x: auto">
             <table>
               <thead>
@@ -217,6 +228,9 @@
               <tbody id="paymentTable"></tbody>
             </table>
           </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="paymentPagination"></div>
         </section>
 
         <!-- Expenses -->
