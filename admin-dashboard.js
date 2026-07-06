@@ -157,7 +157,10 @@ function showMsg(id, text, color) {
 // Save User
 function saveUser() {
   const id = document.getElementById("userId").value;
-  const username = document.getElementById("username").value.trim();
+  const username = document
+    .getElementById("username")
+    .value.trim()
+    .toLowerCase();
   const email = document.getElementById("email").value.trim();
   const phone = document.getElementById("phone").value.trim();
   const fanfin = document.getElementById("fanfin").value.trim();
@@ -177,7 +180,26 @@ function saveUser() {
     alert("Please fill all fields");
     return;
   }
+  // Validate username format
+  const parts = username.split("/");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    alert("Invalid username format. Use: name/floor (e.g. ismael/03)");
+    return;
+  }
 
+  const floorNum = parseInt(parts[1]);
+
+  // Block /00 — reserved for admin
+  if (parts[1] === "00") {
+    alert("❌ Floor /00 is reserved for admin. Please use floors 01 to 05.");
+    return;
+  }
+
+  // Block floors above 05
+  if (floorNum < 1 || floorNum > 5) {
+    alert("❌ Invalid floor number. Only floors 01 to 05 are allowed.");
+    return;
+  }
   const manualAmount = !document
     .getElementById("amount")
     .hasAttribute("readonly");
@@ -457,7 +479,7 @@ function renderPayments() {
     );
     table.innerHTML += `
       <tr>
-        <td>${p.tenant}</td>
+        <td>${p.tenant} ${users.find((u) => u.username === p.tenant && u.status === "Moved Out") ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
         <td>$${p.amount.toFixed(2)}</td>
         <td>${p.space} m2</td>
         <td>${p.period} month(s)</td>

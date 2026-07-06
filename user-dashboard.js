@@ -46,23 +46,24 @@ function loadMySpace() {
     .filter((p) => p.tenant === currentUser.username)
     .pop();
 
-  document.getElementById("userSpace").textContent = currentUser.space + " m2";
-  document.getElementById("userAmount").textContent =
-    "$" + currentUser.amount.toFixed(2);
-  document.getElementById("userPeriod").textContent =
-    currentUser.period + " month(s)";
   document.getElementById("userNextDue").textContent = lastPayment
     ? lastPayment.nextDue
     : "Not set";
 
   const detailsTable = document.getElementById("userDetailsTable");
   detailsTable.innerHTML = `
-    <tr><td><strong>Username</strong></td><td>${currentUser.username}</td></tr>
-    <tr><td><strong>Email</strong></td><td>${currentUser.email}</td></tr>
-    <tr><td><strong>Phone</strong></td><td>${currentUser.phone}</td></tr>
-    <tr><td><strong>Space</strong></td><td>${currentUser.space} m2</td></tr>
-    <tr><td><strong>Amount</strong></td><td>$${currentUser.amount.toFixed(2)}</td></tr>
-    <tr><td><strong>Period</strong></td><td>${currentUser.period} month(s)</td></tr>
+    <div class="profile-field">
+      <span class="profile-field-label">👤 Username</span>
+      <span class="profile-field-value">${currentUser.username}</span>
+    </div>
+    <div class="profile-field">
+      <span class="profile-field-label">📧 Email</span>
+      <span class="profile-field-value">${currentUser.email}</span>
+    </div>
+    <div class="profile-field">
+      <span class="profile-field-label">📞 Phone</span>
+      <span class="profile-field-value">${currentUser.phone}</span>
+    </div>
   `;
 }
 

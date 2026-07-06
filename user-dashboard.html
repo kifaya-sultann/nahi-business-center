@@ -12,8 +12,8 @@
       <aside class="sidebar">
         <h2>User Panel</h2>
         <nav>
-          <a href="#" class="nav-link active" data-page="myspace"
-            >🏢 My Space</a
+          <a href="#" class="nav-link active" data-page="myprofile"
+            >👤 My Profile</a
           >
           <a href="#" class="nav-link" data-page="mypayments">💳 My Payments</a>
           <a href="#" class="nav-link" data-page="countdown">⏳ Countdown</a>
@@ -28,37 +28,30 @@
 
       <!-- Main Content -->
       <main class="main">
-        <!-- My Space -->
-        <section id="myspace" class="page active">
-          <h1>My Space</h1>
-          <div class="cards">
-            <div class="card">
-              <div class="card-label">📐 Space</div>
-              <div class="card-value" id="userSpace">—</div>
+        <!-- My profile -->
+        <section id="myprofile" class="page active">
+          <h1>My Profile</h1>
+
+          <!-- Next Due Card -->
+          <div class="nextdue-card">
+            <div class="nextdue-left">
+              <div class="nextdue-icon">⏳</div>
+              <div>
+                <div class="nextdue-label">Next Payment Due</div>
+                <div class="nextdue-value" id="userNextDue">—</div>
+              </div>
             </div>
-            <div class="card">
-              <div class="card-label">💰 Amount</div>
-              <div class="card-value" id="userAmount">—</div>
-            </div>
-            <div class="card">
-              <div class="card-label">📅 Period</div>
-              <div class="card-value" id="userPeriod">—</div>
-            </div>
-            <div class="card">
-              <div class="card-label">⏳ Next Due</div>
-              <div class="card-value" id="userNextDue">—</div>
+            <div class="nextdue-badge">Stay on track!</div>
+          </div>
+
+          <!-- Profile Information -->
+          <div class="profile-card">
+            <div class="profile-avatar">👤</div>
+            <div class="profile-info">
+              <h2 class="profile-title">Profile Information</h2>
+              <div class="profile-fields" id="userDetailsTable"></div>
             </div>
           </div>
-          <h2 style="margin-top: 30px; margin-bottom: 10px">My Details</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Info</th>
-              </tr>
-            </thead>
-            <tbody id="userDetailsTable"></tbody>
-          </table>
         </section>
 
         <!-- My Payments -->
