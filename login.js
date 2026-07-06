@@ -26,7 +26,7 @@ form.addEventListener("submit", (e) => {
     // ---- ADMIN LOGIN ----
     const adminPassword = localStorage.getItem("adminPassword") || "admin123";
 
-    if (parts[0] === "admin" && password === adminPassword) {
+    if (parts[0].toLowerCase() === "admin" && password === adminPassword) {
       localStorage.setItem("loggedInUser", username);
       window.location.href = "admin-dashboard.html";
     } else {
@@ -36,7 +36,9 @@ form.addEventListener("submit", (e) => {
     // ---- USER LOGIN ----
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const foundUser = users.find(
-      (u) => u.username === username && u.password === password,
+      (u) =>
+        u.username.toLowerCase() === username.toLowerCase() &&
+        u.password === password,
     );
 
     if (foundUser) {

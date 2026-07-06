@@ -371,16 +371,23 @@ function moveOut(id) {
 
   // Extract floor number from username (e.g. "ismael/03" → 3)
   const parts = user.username.split("/");
-  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : null;
+  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
 
-  // Mark matching space as Available
+  // Add new space entry in admin Spaces section
   let allSpaces = JSON.parse(localStorage.getItem("spaces")) || [];
-  allSpaces = allSpaces.map((s) => {
-    if (floorNumber && s.floor === floorNumber && s.status === "Occupied") {
-      return { ...s, status: "Available" };
-    }
-    return s;
+  const newSpaceId =
+    allSpaces.length > 0 ? Math.max(...allSpaces.map((s) => s.id)) + 1 : 1;
+  const price = user.space * pricePerM2;
+
+  allSpaces.push({
+    id: newSpaceId,
+    floor: floorNumber,
+    room: "—",
+    size: user.space,
+    status: "Available",
+    price: price,
   });
+
   localStorage.setItem("spaces", JSON.stringify(allSpaces));
   spaces = allSpaces;
 
@@ -392,7 +399,7 @@ function moveOut(id) {
   renderSpaces();
   updateDashboard();
   alert(
-    `🚪 ${user.username} has been marked as Moved Out. Floor ${floorNumber} space is now available.`,
+    `🚪 ${user.username} has been marked as Moved Out. Floor ${floorNumber} space is now available!`,
   );
 }
 
@@ -403,9 +410,30 @@ function reactivate(id) {
   if (!user) return;
   user.status = "Active";
   localStorage.setItem("users", JSON.stringify(users));
+
+  // Extract floor number from username (e.g. "ismael/03" → 3)
+  const parts = user.username.split("/");
+  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
+
+  // Remove the space that was created when user moved out
+  let allSpaces = JSON.parse(localStorage.getItem("spaces")) || [];
+  allSpaces = allSpaces.filter(
+    (s) =>
+      !(
+        s.floor === floorNumber &&
+        s.status === "Available" &&
+        s.size === user.space
+      ),
+  );
+  localStorage.setItem("spaces", JSON.stringify(allSpaces));
+  spaces = allSpaces;
+
   renderUsers();
+  renderSpaces();
   updateDashboard();
-  alert(`✅ ${user.username} has been reactivated!`);
+  alert(
+    `✅ ${user.username} has been reactivated! Space removed from available spaces.`,
+  );
 }
 
 // Render Payments
@@ -424,6 +452,9 @@ function renderPayments() {
     } else {
       countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
     }
+    const isMovedOut = users.find(
+      (u) => u.username === p.tenant && u.status === "Moved Out",
+    );
     table.innerHTML += `
       <tr>
         <td>${p.tenant}</td>
@@ -533,9 +564,12 @@ function updateDashboard() {
     recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
   } else {
     recent.forEach((p) => {
+      const isMovedOut = users.find(
+        (u) => u.username === p.tenant && u.status === "Moved Out",
+      );
       recentTable.innerHTML += `
         <tr>
-          <td>${p.tenant}</td>
+          <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
           <td>$${p.amount.toFixed(2)}</td>
           <td>${p.datePaid}</td>
           <td>${p.nextDue}</td>
