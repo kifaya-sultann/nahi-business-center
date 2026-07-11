@@ -123,7 +123,15 @@
               🚪 Moved Out
             </button>
           </div>
-
+          <!-- Search Bar -->
+          <div class="payment-search" style="margin-bottom: 15px">
+            <input
+              type="text"
+              id="userSearch"
+              placeholder="🔍 Search by username, email or phone..."
+              oninput="renderUsers()"
+            />
+          </div>
           <div class="user-form">
             <input type="hidden" id="userId" />
             <input type="text" id="username" placeholder="Username" />

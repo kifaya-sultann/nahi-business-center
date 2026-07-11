@@ -290,10 +290,23 @@ function renderUsers() {
   const table = document.getElementById("userTable");
   table.innerHTML = "";
 
+  const search =
+    document.getElementById("userSearch")?.value.toLowerCase() || "";
+
   const filtered = users.filter((user) => {
-    if (currentFilter === "active") return user.status !== "Moved Out";
-    if (currentFilter === "movedout") return user.status === "Moved Out";
-    return true;
+    const matchesFilter =
+      currentFilter === "active"
+        ? user.status !== "Moved Out"
+        : currentFilter === "movedout"
+          ? user.status === "Moved Out"
+          : true;
+
+    const matchesSearch =
+      user.username.toLowerCase().includes(search) ||
+      user.email.toLowerCase().includes(search) ||
+      user.phone.toLowerCase().includes(search);
+
+    return matchesFilter && matchesSearch;
   });
 
   filtered.forEach((user) => {
