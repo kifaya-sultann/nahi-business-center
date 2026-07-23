@@ -16,18 +16,20 @@ links.forEach((link) => {
 
 // Logout
 document.getElementById("logout").addEventListener("click", () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("loggedInUser");
   window.location.href = "login.html";
 });
 
 // Data
-let users = JSON.parse(localStorage.getItem("users")) || [];
-let payments = JSON.parse(localStorage.getItem("payments")) || [];
-let spaces = JSON.parse(localStorage.getItem("spaces")) || [];
-let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+let users = [];
+let payments = [];
+let spaces = [];
+let expenses = [];
 let pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
 
 // Load on start
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   document.getElementById("pricePerM2").value = pricePerM2;
   document.getElementById("settingsPhone").value =
     localStorage.getItem("bizPhone") || "";
@@ -35,15 +37,187 @@ window.addEventListener("load", () => {
     localStorage.getItem("bizEmail") || "";
   document.getElementById("settingsTelegram").value =
     localStorage.getItem("bizTelegram") || "";
-  updateDashboard();
-  renderUsers();
-  renderPayments();
-  renderServiceRequests();
-  renderSpaces();
-  renderExpenses();
+  await loadAllData();
 });
 
-// Auto calculate amount
+async function loadAllData() {
+  await Promise.all([
+    loadUsers(),
+    loadPayments(),
+    loadSpaces(),
+    loadExpenses(),
+    loadServiceRequests(),
+    loadDashboard(),
+  ]);
+}
+
+// =====================
+// LOAD FROM BACKEND
+// =====================
+
+async function loadUsers() {
+  try {
+    users = await apiRequest("/users");
+    renderUsers();
+  } catch (e) {
+    console.error("Failed to load users:", e);
+  }
+}
+
+async function loadPayments() {
+  try {
+    payments = await apiRequest("/payments/all");
+    renderPayments();
+  } catch (e) {
+    console.error("Failed to load payments:", e);
+  }
+}
+
+async function loadSpaces() {
+  try {
+    spaces = await apiRequest("/spaces");
+    renderSpaces();
+  } catch (e) {
+    console.error("Failed to load spaces:", e);
+  }
+}
+
+async function loadExpenses() {
+  try {
+    expenses = await apiRequest("/expenses");
+    renderExpenses();
+  } catch (e) {
+    console.error("Failed to load expenses:", e);
+  }
+}
+
+async function loadServiceRequests() {
+  try {
+    const requests = await apiRequest("/service-requests");
+    renderServiceRequests(requests);
+  } catch (e) {
+    console.error("Failed to load service requests:", e);
+  }
+}
+
+async function loadDashboard() {
+  try {
+    const stats = await apiRequest("/dashboard/stats");
+    document.getElementById("totalUsers").textContent = stats.totalUsers;
+    document.getElementById("totalRevenue").textContent =
+      "$" + stats.totalRevenue.toFixed(2);
+    document.getElementById("overdueCount").textContent = stats.overdueCount;
+    document.getElementById("dueThisMonth").textContent = stats.dueThisMonth;
+
+    const recentTable = document.getElementById("recentPaymentsTable");
+    recentTable.innerHTML = "";
+    if (!stats.recentPayments || stats.recentPayments.length === 0) {
+      recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
+    } else {
+      stats.recentPayments.forEach((p) => {
+        const isMovedOut = users.find(
+          (u) => u.username === p.tenant && u.status === "Moved Out",
+        );
+        recentTable.innerHTML += `
+          <tr>
+            <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
+            <td>$${parseFloat(p.amount).toFixed(2)}</td>
+            <td>${p.datePaid}</td>
+            <td>${p.nextDue}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const overdueTable = document.getElementById("overdueTable");
+    overdueTable.innerHTML = "";
+    if (!stats.overdueTenants || stats.overdueTenants.length === 0) {
+      overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
+    } else {
+      stats.overdueTenants.forEach((u) => {
+        overdueTable.innerHTML += `
+          <tr>
+            <td>${u.username}</td>
+            <td>${u.phone}</td>
+            <td>$${parseFloat(u.amount).toFixed(2)}</td>
+            <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
+          </tr>
+        `;
+      });
+    }
+  } catch (e) {
+    console.error("Failed to load dashboard:", e);
+  }
+}
+
+// =====================
+// SETTINGS
+// =====================
+
+function saveSettings() {
+  const val = parseFloat(document.getElementById("pricePerM2").value);
+  if (!val || val <= 0) {
+    alert("Please enter a valid price");
+    return;
+  }
+  pricePerM2 = val;
+  localStorage.setItem("pricePerM2", pricePerM2);
+  showMsg("settingsMsg", "✅ Price saved: $" + pricePerM2 + " per m2", "green");
+}
+
+function saveBusinessInfo() {
+  const phone = document.getElementById("settingsPhone").value.trim();
+  const email = document.getElementById("settingsEmail").value.trim();
+  const telegram = document.getElementById("settingsTelegram").value.trim();
+  if (!phone || !email || !telegram) {
+    alert("Please fill all fields");
+    return;
+  }
+  localStorage.setItem("bizPhone", phone);
+  localStorage.setItem("bizEmail", email);
+  localStorage.setItem("bizTelegram", telegram);
+  showMsg("businessInfoMsg", "✅ Business info saved!", "green");
+}
+
+function changePassword() {
+  const current = document.getElementById("currentPassword").value;
+  const newPass = document.getElementById("newPassword").value;
+  const confirm = document.getElementById("confirmPassword").value;
+  const savedPassword = localStorage.getItem("adminPassword") || "admin123";
+  if (current !== savedPassword) {
+    showMsg("passwordMsg", "❌ Current password is incorrect", "red");
+    return;
+  }
+  if (!newPass || newPass.length < 4) {
+    showMsg(
+      "passwordMsg",
+      "❌ New password must be at least 4 characters",
+      "red",
+    );
+    return;
+  }
+  if (newPass !== confirm) {
+    showMsg("passwordMsg", "❌ Passwords do not match", "red");
+    return;
+  }
+  localStorage.setItem("adminPassword", newPass);
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  showMsg("passwordMsg", "✅ Password changed successfully!", "green");
+}
+
+function showMsg(id, text, color) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.color = color === "green" ? "#22c55e" : "#e53e3e";
+  setTimeout(() => (el.textContent = ""), 3000);
+}
+
+// =====================
+// AUTO CALCULATE
+// =====================
+
 document.getElementById("space").addEventListener("input", calcAmount);
 document.getElementById("period").addEventListener("change", calcAmount);
 document.getElementById("spaceSize").addEventListener("input", calcSpacePrice);
@@ -90,72 +264,11 @@ function calcSpacePrice() {
     price > 0 ? "$" + price.toFixed(2) + "/month" : "";
 }
 
-// Save Price Settings
-function saveSettings() {
-  const val = parseFloat(document.getElementById("pricePerM2").value);
-  if (!val || val <= 0) {
-    alert("Please enter a valid price");
-    return;
-  }
-  pricePerM2 = val;
-  localStorage.setItem("pricePerM2", pricePerM2);
-  showMsg("settingsMsg", "✅ Price saved: $" + pricePerM2 + " per m2", "green");
-}
+// =====================
+// USERS
+// =====================
 
-// Save Business Info
-function saveBusinessInfo() {
-  const phone = document.getElementById("settingsPhone").value.trim();
-  const email = document.getElementById("settingsEmail").value.trim();
-  const telegram = document.getElementById("settingsTelegram").value.trim();
-  if (!phone || !email || !telegram) {
-    alert("Please fill all fields");
-    return;
-  }
-  localStorage.setItem("bizPhone", phone);
-  localStorage.setItem("bizEmail", email);
-  localStorage.setItem("bizTelegram", telegram);
-  showMsg("businessInfoMsg", "✅ Business info saved!", "green");
-}
-
-// Change Admin Password
-function changePassword() {
-  const current = document.getElementById("currentPassword").value;
-  const newPass = document.getElementById("newPassword").value;
-  const confirm = document.getElementById("confirmPassword").value;
-  const savedPassword = localStorage.getItem("adminPassword") || "admin123";
-  if (current !== savedPassword) {
-    showMsg("passwordMsg", "❌ Current password is incorrect", "red");
-    return;
-  }
-  if (!newPass || newPass.length < 4) {
-    showMsg(
-      "passwordMsg",
-      "❌ New password must be at least 4 characters",
-      "red",
-    );
-    return;
-  }
-  if (newPass !== confirm) {
-    showMsg("passwordMsg", "❌ Passwords do not match", "red");
-    return;
-  }
-  localStorage.setItem("adminPassword", newPass);
-  document.getElementById("currentPassword").value = "";
-  document.getElementById("newPassword").value = "";
-  document.getElementById("confirmPassword").value = "";
-  showMsg("passwordMsg", "✅ Password changed successfully!", "green");
-}
-
-// Helper
-function showMsg(id, text, color) {
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.style.color = color === "green" ? "#22c55e" : "#e53e3e";
-  setTimeout(() => (el.textContent = ""), 3000);
-}
-
-// Save User
-function saveUser() {
+async function saveUser() {
   const id = document.getElementById("userId").value;
   const username = document
     .getElementById("username")
@@ -180,7 +293,7 @@ function saveUser() {
     alert("Please fill all fields");
     return;
   }
-  // Validate username format
+
   const parts = username.split("/");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     alert("Invalid username format. Use: name/floor (e.g. ismael/03)");
@@ -188,18 +301,15 @@ function saveUser() {
   }
 
   const floorNum = parseInt(parts[1]);
-
-  // Block /00 — reserved for admin
   if (parts[1] === "00") {
     alert("❌ Floor /00 is reserved for admin. Please use floors 01 to 05.");
     return;
   }
-
-  // Block floors above 05
   if (floorNum < 1 || floorNum > 5) {
     alert("❌ Invalid floor number. Only floors 01 to 05 are allowed.");
     return;
   }
+
   const manualAmount = !document
     .getElementById("amount")
     .hasAttribute("readonly");
@@ -216,64 +326,45 @@ function saveUser() {
     return;
   }
 
-  const oldUsername = id
-    ? users.find((u) => u.id == id)?.username || null
-    : null;
-
-  if (id) {
-    const index = users.findIndex((u) => u.id == id);
-    users[index] = {
-      ...users[index],
-      username,
-      email,
-      phone,
-      fanfin,
-      password,
-      space,
-      period,
-      amount,
-    };
-  } else {
-    const newId =
-      users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-    users.push({
-      id: newId,
-      username,
-      email,
-      phone,
-      fanfin,
-      password,
-      space,
-      period,
-      amount,
-      status: "Active",
-    });
-  }
-
-  localStorage.setItem("users", JSON.stringify(users));
-
-  if (oldUsername && oldUsername !== username) {
-    payments = payments.map((p) =>
-      p.tenant === oldUsername ? { ...p, tenant: username } : p,
-    );
-    localStorage.setItem("payments", JSON.stringify(payments));
-    let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
-    myRequests = myRequests.map((r) =>
-      r.tenant === oldUsername ? { ...r, tenant: username } : r,
-    );
-    localStorage.setItem("myRequests", JSON.stringify(myRequests));
-    if (localStorage.getItem("loggedInUser") === oldUsername) {
-      localStorage.setItem("loggedInUser", username);
+  try {
+    if (id) {
+      await apiRequest(`/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          username,
+          email,
+          phone,
+          fanfin,
+          password,
+          space,
+          period,
+          amount,
+        }),
+      });
+    } else {
+      await apiRequest("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          username,
+          email,
+          phone,
+          fanfin,
+          password,
+          space,
+          period,
+          amount,
+        }),
+      });
     }
+    clearForm();
+    await loadUsers();
+    await loadDashboard();
+    alert(id ? "✅ User updated!" : "✅ User created!");
+  } catch (e) {
+    alert("❌ " + e.message);
   }
-
-  clearForm();
-  renderUsers();
-  renderPayments();
-  updateDashboard();
 }
 
-// Current filter
 let currentFilter = "all";
 
 function filterUsers(filter) {
@@ -285,11 +376,9 @@ function filterUsers(filter) {
   renderUsers();
 }
 
-// Render Users Table
 function renderUsers() {
   const table = document.getElementById("userTable");
   table.innerHTML = "";
-
   const search =
     document.getElementById("userSearch")?.value.toLowerCase() || "";
 
@@ -300,12 +389,10 @@ function renderUsers() {
         : currentFilter === "movedout"
           ? user.status === "Moved Out"
           : true;
-
     const matchesSearch =
       user.username.toLowerCase().includes(search) ||
       user.email.toLowerCase().includes(search) ||
       user.phone.toLowerCase().includes(search);
-
     return matchesFilter && matchesSearch;
   });
 
@@ -318,13 +405,12 @@ function renderUsers() {
       const nextDue = new Date(lastPayment.nextDueRaw);
       const today = new Date();
       const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-      if (diff > 0) {
+      if (diff > 0)
         countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
-      } else if (diff === 0) {
+      else if (diff === 0)
         countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
-      } else {
+      else
         countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
-      }
     }
 
     const statusHTML =
@@ -335,20 +421,20 @@ function renderUsers() {
     const actionsHTML =
       user.status === "Moved Out"
         ? `
-        <button class="btn-paid" onclick="reactivate(${user.id})">🔄 Reactivate</button>
-        <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
-        <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+        <button class="btn-paid" onclick="reactivate('${user._id || user.id}')">🔄 Reactivate</button>
+        <button class="btn-edit" onclick="editUser('${user._id || user.id}')">Edit</button>
+        <button class="btn-delete" onclick="deleteUser('${user._id || user.id}')">Delete</button>
       `
         : `
-        <button class="btn-paid" onclick="markPaid(${user.id})">✅ Paid</button>
-        <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
-        <button class="btn-moveout" onclick="moveOut(${user.id})">🚪 Move Out</button>
-        <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+        <button class="btn-paid" onclick="markPaid('${user._id || user.id}')">✅ Paid</button>
+        <button class="btn-edit" onclick="editUser('${user._id || user.id}')">Edit</button>
+        <button class="btn-moveout" onclick="moveOut('${user._id || user.id}')">🚪 Move Out</button>
+        <button class="btn-delete" onclick="deleteUser('${user._id || user.id}')">Delete</button>
       `;
 
     table.innerHTML += `
       <tr style="${user.status === "Moved Out" ? "opacity:0.6;" : ""}">
-        <td>${user.id}</td>
+        <td>${user.id || user._id}</td>
         <td>${user.username}</td>
         <td>${user.email}</td>
         <td>${user.phone}</td>
@@ -356,7 +442,7 @@ function renderUsers() {
         <td>${user.password}</td>
         <td>${user.space} m2</td>
         <td>${user.period} month(s)</td>
-        <td>$${user.amount.toFixed(2)}</td>
+        <td>$${parseFloat(user.amount).toFixed(2)}</td>
         <td>${countdownHTML}</td>
         <td>${statusHTML}</td>
         <td>${actionsHTML}</td>
@@ -365,209 +451,101 @@ function renderUsers() {
   });
 }
 
-// Mark as Paid
-function markPaid(id) {
-  const user = users.find((u) => u.id === id);
+async function markPaid(id) {
+  const user = users.find((u) => (u._id || u.id) == id);
   if (!user) return;
-  const today = new Date();
-  const dueDate = new Date();
-  dueDate.setMonth(dueDate.getMonth() + user.period);
-  const payment = {
-    id: Date.now(),
-    tenant: user.username,
-    amount: user.amount,
-    space: user.space,
-    period: user.period,
-    datePaid: today.toLocaleDateString(),
-    nextDue: dueDate.toLocaleDateString(),
-    nextDueRaw: dueDate.toISOString(),
-  };
-  payments.push(payment);
-  localStorage.setItem("payments", JSON.stringify(payments));
-  renderPayments();
-  renderUsers();
-  alert(
-    `✅ ${user.username} marked as paid. Next due: ${dueDate.toLocaleDateString()}`,
-  );
+  try {
+    const result = await apiRequest("/payments", {
+      method: "POST",
+      body: JSON.stringify({ userId: id }),
+    });
+    await loadPayments();
+    await loadUsers();
+    await loadDashboard();
+    alert(
+      `✅ ${user.username} marked as paid. Next due: ${result.payment.nextDue}`,
+    );
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Move Out
-function moveOut(id) {
+async function moveOut(id) {
   if (
     !confirm(
       "Mark this user as Moved Out? Their space will become available again.",
     )
   )
     return;
-  const user = users.find((u) => u.id === id);
+  const user = users.find((u) => (u._id || u.id) == id);
   if (!user) return;
-  user.status = "Moved Out";
-  localStorage.setItem("users", JSON.stringify(users));
+  try {
+    await apiRequest(`/users/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status: "Moved Out" }),
+    });
 
-  // Extract floor number from username (e.g. "ismael/03" → 3)
-  const parts = user.username.split("/");
-  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
+    // Add space to backend
+    const parts = user.username.split("/");
+    const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
+    const price = user.space * pricePerM2;
+    await apiRequest("/spaces", {
+      method: "POST",
+      body: JSON.stringify({
+        floor: floorNumber,
+        room: "—",
+        size: user.space,
+        status: "Available",
+        price,
+      }),
+    });
 
-  // Add new space entry in admin Spaces section
-  let allSpaces = JSON.parse(localStorage.getItem("spaces")) || [];
-  const newSpaceId =
-    allSpaces.length > 0 ? Math.max(...allSpaces.map((s) => s.id)) + 1 : 1;
-  const price = user.space * pricePerM2;
-
-  allSpaces.push({
-    id: newSpaceId,
-    floor: floorNumber,
-    room: "—",
-    size: user.space,
-    status: "Available",
-    price: price,
-  });
-
-  localStorage.setItem("spaces", JSON.stringify(allSpaces));
-  spaces = allSpaces;
-
-  if (localStorage.getItem("loggedInUser") === user.username) {
-    localStorage.removeItem("loggedInUser");
+    await loadUsers();
+    await loadSpaces();
+    await loadDashboard();
+    alert(`🚪 ${user.username} has been marked as Moved Out!`);
+  } catch (e) {
+    alert("❌ " + e.message);
   }
-
-  renderUsers();
-  renderSpaces();
-  updateDashboard();
-  alert(
-    `🚪 ${user.username} has been marked as Moved Out. Floor ${floorNumber} space is now available!`,
-  );
 }
 
-// Reactivate User
-function reactivate(id) {
+async function reactivate(id) {
   if (!confirm("Reactivate this user?")) return;
-  const user = users.find((u) => u.id === id);
+  const user = users.find((u) => (u._id || u.id) == id);
   if (!user) return;
-  user.status = "Active";
-  localStorage.setItem("users", JSON.stringify(users));
+  try {
+    await apiRequest(`/users/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status: "Active" }),
+    });
 
-  // Extract floor number from username (e.g. "ismael/03" → 3)
-  const parts = user.username.split("/");
-  const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
-
-  // Remove the space that was created when user moved out
-  let allSpaces = JSON.parse(localStorage.getItem("spaces")) || [];
-  allSpaces = allSpaces.filter(
-    (s) =>
-      !(
+    // Remove space from backend
+    const parts = user.username.split("/");
+    const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
+    const spaceToRemove = spaces.find(
+      (s) =>
         s.floor === floorNumber &&
         s.status === "Available" &&
-        s.size === user.space
-      ),
-  );
-  localStorage.setItem("spaces", JSON.stringify(allSpaces));
-  spaces = allSpaces;
+        s.size === user.space,
+    );
+    if (spaceToRemove) {
+      await apiRequest(`/spaces/${spaceToRemove._id || spaceToRemove.id}`, {
+        method: "DELETE",
+      });
+    }
 
-  renderUsers();
-  renderSpaces();
-  updateDashboard();
-  alert(
-    `✅ ${user.username} has been reactivated! Space removed from available spaces.`,
-  );
+    await loadUsers();
+    await loadSpaces();
+    await loadDashboard();
+    alert(`✅ ${user.username} has been reactivated!`);
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Payments pagination
-let currentPaymentPage = 1;
-const paymentsPerPage = 5;
-
-function renderPayments() {
-  const search =
-    document.getElementById("paymentSearch")?.value.toLowerCase() || "";
-  const table = document.getElementById("paymentTable");
-  table.innerHTML = "";
-
-  // Filter by search
-  const filtered = payments.filter((p) =>
-    p.tenant.toLowerCase().includes(search),
-  );
-
-  // Paginate
-  const totalPages = Math.ceil(filtered.length / paymentsPerPage);
-  if (currentPaymentPage > totalPages) currentPaymentPage = 1;
-
-  const start = (currentPaymentPage - 1) * paymentsPerPage;
-  const paginated = filtered.slice(start, start + paymentsPerPage);
-
-  if (paginated.length === 0) {
-    table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No payments found</td></tr>`;
-  } else {
-    paginated.forEach((p) => {
-      const nextDue = new Date(p.nextDueRaw);
-      const today = new Date();
-      const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-      let countdownHTML = "";
-      if (diff > 0) {
-        countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
-      } else if (diff === 0) {
-        countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
-      } else {
-        countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
-      }
-      const isMovedOut = users.find(
-        (u) => u.username === p.tenant && u.status === "Moved Out",
-      );
-      table.innerHTML += `
-        <tr>
-          <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-          <td>$${p.amount.toFixed(2)}</td>
-          <td>${p.space} m2</td>
-          <td>${p.period} month(s)</td>
-          <td>${p.datePaid}</td>
-          <td>${p.nextDue}</td>
-          <td>${countdownHTML}</td>
-        </tr>
-      `;
-    });
-  }
-
-  // Render pagination buttons
-  const pagination = document.getElementById("paymentPagination");
-  pagination.innerHTML = "";
-
-  if (totalPages <= 1) return;
-
-  // Previous button
-  const prevBtn = document.createElement("button");
-  prevBtn.textContent = "← Prev";
-  prevBtn.disabled = currentPaymentPage === 1;
-  prevBtn.onclick = () => {
-    currentPaymentPage--;
-    renderPayments();
-  };
-  pagination.appendChild(prevBtn);
-
-  // Page number buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    if (i === currentPaymentPage) btn.classList.add("active");
-    btn.onclick = () => {
-      currentPaymentPage = i;
-      renderPayments();
-    };
-    pagination.appendChild(btn);
-  }
-
-  // Next button
-  const nextBtn = document.createElement("button");
-  nextBtn.textContent = "Next →";
-  nextBtn.disabled = currentPaymentPage === totalPages;
-  nextBtn.onclick = () => {
-    currentPaymentPage++;
-    renderPayments();
-  };
-  pagination.appendChild(nextBtn);
-}
-
-// Edit User
 function editUser(id) {
-  const user = users.find((u) => u.id === id);
-  document.getElementById("userId").value = user.id;
+  const user = users.find((u) => (u._id || u.id) == id);
+  document.getElementById("userId").value = user._id || user.id;
   document.getElementById("username").value = user.username;
   document.getElementById("email").value = user.email;
   document.getElementById("phone").value = user.phone;
@@ -575,32 +553,22 @@ function editUser(id) {
   document.getElementById("password").value = user.password;
   document.getElementById("space").value = user.space;
   document.getElementById("period").value = user.period;
-  document.getElementById("amount").value = "$" + user.amount.toFixed(2);
+  document.getElementById("amount").value =
+    "$" + parseFloat(user.amount).toFixed(2);
 }
 
-// Delete User
-function deleteUser(id) {
+async function deleteUser(id) {
   if (!confirm("Are you sure you want to delete this user?")) return;
-  const user = users.find((u) => u.id === id);
-  users = users.filter((u) => u.id !== id);
-  localStorage.setItem("users", JSON.stringify(users));
-  let allPayments = JSON.parse(localStorage.getItem("payments")) || [];
-  allPayments = allPayments.filter((p) => p.tenant !== user.username);
-  localStorage.setItem("payments", JSON.stringify(allPayments));
-  payments = allPayments;
-  let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
-  myRequests = myRequests.filter((r) => r.tenant !== user.username);
-  localStorage.setItem("myRequests", JSON.stringify(myRequests));
-  if (localStorage.getItem("loggedInUser") === user.username) {
-    localStorage.removeItem("loggedInUser");
+  try {
+    await apiRequest(`/users/${id}`, { method: "DELETE" });
+    await loadUsers();
+    await loadPayments();
+    await loadDashboard();
+  } catch (e) {
+    alert("❌ " + e.message);
   }
-  renderUsers();
-  renderPayments();
-  renderServiceRequests();
-  updateDashboard();
 }
 
-// Clear Form
 function clearForm() {
   document.getElementById("userId").value = "";
   document.getElementById("username").value = "";
@@ -623,126 +591,129 @@ function clearForm() {
   btn.style.borderColor = "#ddd";
 }
 
-// Update Dashboard
-function updateDashboard() {
-  document.getElementById("totalUsers").textContent = users.filter(
-    (u) => u.status !== "Moved Out",
-  ).length;
-  const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-  document.getElementById("totalRevenue").textContent =
-    "$" + totalRevenue.toFixed(2);
-  const today = new Date();
-  let overdueCount = 0;
-  let dueThisMonth = 0;
-  users
-    .filter((u) => u.status !== "Moved Out")
-    .forEach((user) => {
-      const lastPayment = payments
-        .filter((p) => p.tenant === user.username)
-        .pop();
-      if (lastPayment) {
-        const nextDue = new Date(lastPayment.nextDueRaw);
-        const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-        if (diff < 0) overdueCount++;
-        if (diff >= 0 && diff <= 30) dueThisMonth++;
-      } else {
-        overdueCount++;
-      }
-    });
-  document.getElementById("overdueCount").textContent = overdueCount;
-  document.getElementById("dueThisMonth").textContent = dueThisMonth;
+// =====================
+// PAYMENTS
+// =====================
 
-  const recentTable = document.getElementById("recentPaymentsTable");
-  recentTable.innerHTML = "";
-  const recent = [...payments].reverse().slice(0, 5);
-  if (recent.length === 0) {
-    recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
+let currentPaymentPage = 1;
+const paymentsPerPage = 5;
+
+function renderPayments() {
+  const search =
+    document.getElementById("paymentSearch")?.value.toLowerCase() || "";
+  const table = document.getElementById("paymentTable");
+  table.innerHTML = "";
+
+  const filtered = payments.filter((p) =>
+    p.tenant.toLowerCase().includes(search),
+  );
+  const totalPages = Math.ceil(filtered.length / paymentsPerPage);
+  if (currentPaymentPage > totalPages) currentPaymentPage = 1;
+
+  const start = (currentPaymentPage - 1) * paymentsPerPage;
+  const paginated = filtered.slice(start, start + paymentsPerPage);
+
+  if (paginated.length === 0) {
+    table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No payments found</td></tr>`;
   } else {
-    recent.forEach((p) => {
+    paginated.forEach((p) => {
+      const nextDue = new Date(p.nextDueRaw);
+      const today = new Date();
+      const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+      let countdownHTML = "";
+      if (diff > 0)
+        countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
+      else if (diff === 0)
+        countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
+      else
+        countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
+
       const isMovedOut = users.find(
         (u) => u.username === p.tenant && u.status === "Moved Out",
       );
-      recentTable.innerHTML += `
+      table.innerHTML += `
         <tr>
           <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-          <td>$${p.amount.toFixed(2)}</td>
+          <td>$${parseFloat(p.amount).toFixed(2)}</td>
+          <td>${p.space} m2</td>
+          <td>${p.period} month(s)</td>
           <td>${p.datePaid}</td>
           <td>${p.nextDue}</td>
+          <td>${countdownHTML}</td>
         </tr>
       `;
     });
   }
 
-  const overdueTable = document.getElementById("overdueTable");
-  overdueTable.innerHTML = "";
-  let hasOverdue = false;
-  users
-    .filter((u) => u.status !== "Moved Out")
-    .forEach((user) => {
-      const lastPayment = payments
-        .filter((p) => p.tenant === user.username)
-        .pop();
-      let isOverdue = false;
-      let overdueDays = 0;
-      if (lastPayment) {
-        const nextDue = new Date(lastPayment.nextDueRaw);
-        const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-        if (diff < 0) {
-          isOverdue = true;
-          overdueDays = Math.abs(diff);
-        }
-      } else {
-        isOverdue = true;
-        overdueDays = "Never paid";
-      }
-      if (isOverdue) {
-        hasOverdue = true;
-        overdueTable.innerHTML += `
-        <tr>
-          <td>${user.username}</td>
-          <td>${user.phone}</td>
-          <td>$${user.amount.toFixed(2)}</td>
-          <td><span style="color:#e53e3e;font-weight:bold">${overdueDays === "Never paid" ? "Never paid" : overdueDays + " days"}</span></td>
-        </tr>
-      `;
-      }
-    });
-  if (!hasOverdue) {
-    overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
+  const pagination = document.getElementById("paymentPagination");
+  pagination.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  const prevBtn = document.createElement("button");
+  prevBtn.textContent = "← Prev";
+  prevBtn.disabled = currentPaymentPage === 1;
+  prevBtn.onclick = () => {
+    currentPaymentPage--;
+    renderPayments();
+  };
+  pagination.appendChild(prevBtn);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    if (i === currentPaymentPage) btn.classList.add("active");
+    btn.onclick = () => {
+      currentPaymentPage = i;
+      renderPayments();
+    };
+    pagination.appendChild(btn);
   }
+
+  const nextBtn = document.createElement("button");
+  nextBtn.textContent = "Next →";
+  nextBtn.disabled = currentPaymentPage === totalPages;
+  nextBtn.onclick = () => {
+    currentPaymentPage++;
+    renderPayments();
+  };
+  pagination.appendChild(nextBtn);
 }
 
-// Render Service Requests
-function renderServiceRequests() {
-  const myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
+// =====================
+// SERVICE REQUESTS
+// =====================
+
+function renderServiceRequests(requests = []) {
   const table = document.getElementById("serviceRequestsTable");
   table.innerHTML = "";
-  if (myRequests.length === 0) {
+
+  if (requests.length === 0) {
     table.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No service requests yet</td></tr>`;
   } else {
-    [...myRequests].reverse().forEach((r) => {
+    [...requests].reverse().forEach((r) => {
       let statusHTML = "";
-      if (r.status === "Pending") {
+      if (r.status === "Pending")
         statusHTML = `<span style="color:#d97706;font-weight:bold;">⏳ Pending</span>`;
-      } else if (r.status === "In Progress") {
+      else if (r.status === "In Progress")
         statusHTML = `<span style="color:#3b82f6;font-weight:bold;">🔄 In Progress</span>`;
-      } else {
+      else
         statusHTML = `<span style="color:#22c55e;font-weight:bold;">✅ Done</span>`;
-      }
+
       let actionsHTML = "";
       if (r.status === "Pending") {
         actionsHTML = `
-          <button class="btn-edit" onclick="updateServiceRequest(${r.id}, 'In Progress')">🔄 In Progress</button>
-          <button class="btn-paid" onclick="updateServiceRequest(${r.id}, 'Done')">✅ Done</button>
+          <button class="btn-edit" onclick="updateServiceRequest('${r._id || r.id}', 'In Progress')">🔄 In Progress</button>
+          <button class="btn-paid" onclick="updateServiceRequest('${r._id || r.id}', 'Done')">✅ Done</button>
         `;
       } else if (r.status === "In Progress") {
-        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest(${r.id}, 'Done')">✅ Mark Done</button>`;
+        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest('${r._id || r.id}', 'Done')">✅ Mark Done</button>`;
       } else {
         actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
       }
+
       table.innerHTML += `
         <tr>
-          <td>${r.id}</td>
+          <td>${r.id || r._id}</td>
           <td>${r.tenant}</td>
           <td>${r.type}</td>
           <td>${r.description}</td>
@@ -753,16 +724,18 @@ function renderServiceRequests() {
       `;
     });
   }
-  document.getElementById("totalServiceReqs").textContent = myRequests.length;
-  document.getElementById("pendingServiceReqs").textContent = myRequests.filter(
+
+  document.getElementById("totalServiceReqs").textContent = requests.length;
+  document.getElementById("pendingServiceReqs").textContent = requests.filter(
     (r) => r.status === "Pending",
   ).length;
   document.getElementById("inProgressServiceReqs").textContent =
-    myRequests.filter((r) => r.status === "In Progress").length;
-  document.getElementById("doneServiceReqs").textContent = myRequests.filter(
+    requests.filter((r) => r.status === "In Progress").length;
+  document.getElementById("doneServiceReqs").textContent = requests.filter(
     (r) => r.status === "Done",
   ).length;
-  const pending = myRequests.filter((r) => r.status === "Pending").length;
+
+  const pending = requests.filter((r) => r.status === "Pending").length;
   const badge = document.getElementById("serviceRequestBadge");
   if (pending > 0) {
     badge.style.display = "inline-block";
@@ -772,44 +745,55 @@ function renderServiceRequests() {
   }
 }
 
-// Update Service Request Status
-function updateServiceRequest(id, status) {
-  let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
-  const index = myRequests.findIndex((r) => r.id === id);
-  if (index === -1) return;
-  myRequests[index].status = status;
-  localStorage.setItem("myRequests", JSON.stringify(myRequests));
-  renderServiceRequests();
+async function updateServiceRequest(id, status) {
+  try {
+    await apiRequest(`/service-requests/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+    await loadServiceRequests();
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Save Space
-function saveSpace() {
+// =====================
+// SPACES
+// =====================
+
+async function saveSpace() {
   const id = document.getElementById("spaceId").value;
   const floor = parseInt(document.getElementById("spaceFloor").value);
   const room = document.getElementById("spaceRoom").value.trim();
   const size = parseFloat(document.getElementById("spaceSize").value);
   const status = document.getElementById("spaceStatus").value;
+
   if (!floor || !room || !size) {
     alert("Please fill all fields");
     return;
   }
+
   const price = size * pricePerM2;
-  if (id) {
-    const index = spaces.findIndex((s) => s.id == id);
-    spaces[index] = { ...spaces[index], floor, room, size, status, price };
-  } else {
-    const newId =
-      spaces.length > 0 ? Math.max(...spaces.map((s) => s.id)) + 1 : 1;
-    spaces.push({ id: newId, floor, room, size, status, price });
+  try {
+    if (id) {
+      await apiRequest(`/spaces/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ floor, room, size, status, price }),
+      });
+    } else {
+      await apiRequest("/spaces", {
+        method: "POST",
+        body: JSON.stringify({ floor, room, size, status, price }),
+      });
+    }
+    clearSpaceForm();
+    await loadSpaces();
+  } catch (e) {
+    alert("❌ " + e.message);
   }
-  localStorage.setItem("spaces", JSON.stringify(spaces));
-  clearSpaceForm();
-  renderSpaces();
 }
 
-// Render Spaces Table
 function renderSpaces() {
-  spaces = JSON.parse(localStorage.getItem("spaces")) || [];
   const table = document.getElementById("spacesTable");
   table.innerHTML = "";
   if (spaces.length === 0) {
@@ -823,42 +807,42 @@ function renderSpaces() {
         : `<span style="color:#e53e3e;font-weight:bold;">🔴 Occupied</span>`;
     table.innerHTML += `
       <tr>
-        <td>${s.id}</td>
+        <td>${s.id || s._id}</td>
         <td>Floor ${s.floor}</td>
         <td>Room ${s.room}</td>
         <td>${s.size} m2</td>
-        <td>$${s.price.toFixed(2)}/month</td>
+        <td>$${parseFloat(s.price).toFixed(2)}/month</td>
         <td>${statusHTML}</td>
         <td>
-          <button class="btn-edit" onclick="editSpace(${s.id})">Edit</button>
-          <button class="btn-delete" onclick="deleteSpace(${s.id})">Delete</button>
+          <button class="btn-edit" onclick="editSpace('${s._id || s.id}')">Edit</button>
+          <button class="btn-delete" onclick="deleteSpace('${s._id || s.id}')">Delete</button>
         </td>
       </tr>
     `;
   });
 }
 
-// Edit Space
 function editSpace(id) {
-  const s = spaces.find((s) => s.id === id);
-  document.getElementById("spaceId").value = s.id;
+  const s = spaces.find((s) => (s._id || s.id) == id);
+  document.getElementById("spaceId").value = s._id || s.id;
   document.getElementById("spaceFloor").value = s.floor;
   document.getElementById("spaceRoom").value = s.room;
   document.getElementById("spaceSize").value = s.size;
   document.getElementById("spaceStatus").value = s.status;
   document.getElementById("spacePrice").value =
-    "$" + s.price.toFixed(2) + "/month";
+    "$" + parseFloat(s.price).toFixed(2) + "/month";
 }
 
-// Delete Space
-function deleteSpace(id) {
+async function deleteSpace(id) {
   if (!confirm("Are you sure you want to delete this space?")) return;
-  spaces = spaces.filter((s) => s.id !== id);
-  localStorage.setItem("spaces", JSON.stringify(spaces));
-  renderSpaces();
+  try {
+    await apiRequest(`/spaces/${id}`, { method: "DELETE" });
+    await loadSpaces();
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Clear Space Form
 function clearSpaceForm() {
   document.getElementById("spaceId").value = "";
   document.getElementById("spaceFloor").value = "";
@@ -868,8 +852,11 @@ function clearSpaceForm() {
   document.getElementById("spacePrice").value = "";
 }
 
-// Save Expense
-function saveExpense() {
+// =====================
+// EXPENSES
+// =====================
+
+async function saveExpense() {
   const id = document.getElementById("expenseId").value;
   const date =
     document.getElementById("expenseDate").value ||
@@ -889,41 +876,42 @@ function saveExpense() {
   const dueDate = paidDate.toLocaleDateString();
   const dueDateRaw = paidDate.toISOString();
 
-  if (id) {
-    const index = expenses.findIndex((e) => e.id == id);
-    expenses[index] = {
-      ...expenses[index],
-      name,
-      reason,
-      amount,
-      date,
-      period,
-      dueDate,
-      dueDateRaw,
-    };
-  } else {
-    const newId =
-      expenses.length > 0 ? Math.max(...expenses.map((e) => e.id)) + 1 : 1;
-    expenses.push({
-      id: newId,
-      name,
-      reason,
-      amount,
-      date,
-      period,
-      dueDate,
-      dueDateRaw,
-    });
+  try {
+    if (id) {
+      await apiRequest(`/expenses/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name,
+          reason,
+          amount,
+          date,
+          period,
+          dueDate,
+          dueDateRaw,
+        }),
+      });
+    } else {
+      await apiRequest("/expenses", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          reason,
+          amount,
+          date,
+          period,
+          dueDate,
+          dueDateRaw,
+        }),
+      });
+    }
+    clearExpenseForm();
+    await loadExpenses();
+  } catch (e) {
+    alert("❌ " + e.message);
   }
-
-  localStorage.setItem("expenses", JSON.stringify(expenses));
-  clearExpenseForm();
-  renderExpenses();
 }
 
-// Render Expenses
 function renderExpenses() {
-  expenses = JSON.parse(localStorage.getItem("expenses")) || [];
   const table = document.getElementById("expensesTable");
   table.innerHTML = "";
 
@@ -936,19 +924,18 @@ function renderExpenses() {
         const due = new Date(e.dueDateRaw);
         const today = new Date();
         const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-        if (diff > 0) {
+        if (diff > 0)
           countdownHTML = `<span style="color:#22c55e;font-weight:bold;">⏳ ${diff} days left</span>`;
-        } else if (diff === 0) {
+        else if (diff === 0)
           countdownHTML = `<span style="color:#f97316;font-weight:bold;">⚠️ Due Today!</span>`;
-        } else {
+        else
           countdownHTML = `<span style="color:#e53e3e;font-weight:bold;">🔴 Overdue by ${Math.abs(diff)} days</span>`;
-        }
       }
       const periodLabel =
         e.period === 15 ? "15 Days" : e.period === 30 ? "1 Month" : "3 Months";
       table.innerHTML += `
         <tr>
-          <td>${e.id}</td>
+          <td>${e.id || e._id}</td>
           <td>${e.name}</td>
           <td>${e.reason}</td>
           <td>$${parseFloat(e.amount).toFixed(2)}</td>
@@ -957,8 +944,8 @@ function renderExpenses() {
           <td>${e.dueDate || "—"}</td>
           <td>${countdownHTML}</td>
           <td>
-            <button class="btn-edit" onclick="editExpense(${e.id})">Edit</button>
-            <button class="btn-delete" onclick="deleteExpense(${e.id})">Delete</button>
+            <button class="btn-edit" onclick="editExpense('${e._id || e.id}')">Edit</button>
+            <button class="btn-delete" onclick="deleteExpense('${e._id || e.id}')">Delete</button>
           </td>
         </tr>
       `;
@@ -970,10 +957,9 @@ function renderExpenses() {
   document.getElementById("totalExpenseRecords").textContent = expenses.length;
 }
 
-// Edit Expense
 function editExpense(id) {
-  const e = expenses.find((e) => e.id === id);
-  document.getElementById("expenseId").value = e.id;
+  const e = expenses.find((e) => (e._id || e.id) == id);
+  document.getElementById("expenseId").value = e._id || e.id;
   document.getElementById("expenseName").value = e.name;
   document.getElementById("expenseReason").value = e.reason;
   document.getElementById("expenseAmount").value = e.amount;
@@ -981,15 +967,16 @@ function editExpense(id) {
   document.getElementById("expensePeriod").value = e.period || "";
 }
 
-// Delete Expense
-function deleteExpense(id) {
+async function deleteExpense(id) {
   if (!confirm("Are you sure you want to delete this expense?")) return;
-  expenses = expenses.filter((e) => e.id !== id);
-  localStorage.setItem("expenses", JSON.stringify(expenses));
-  renderExpenses();
+  try {
+    await apiRequest(`/expenses/${id}`, { method: "DELETE" });
+    await loadExpenses();
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Clear Expense Form
 function clearExpenseForm() {
   document.getElementById("expenseId").value = "";
   document.getElementById("expenseName").value = "";

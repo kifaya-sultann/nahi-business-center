@@ -1,9 +1,8 @@
 const form = document.getElementById("loginForm");
 
-form.addEventListener("submit", (e) => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // Convert to lowercase right here at the start
   const username = document
     .getElementById("username")
     .value.trim()
@@ -18,36 +17,35 @@ form.addEventListener("submit", (e) => {
   // Split username by "/"
   const parts = username.split("/");
 
-  // Must have exactly two parts e.g. "admin/00" or "ismael/03"
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     alert("Invalid username format. Use: name/floor (e.g. ismael/03)");
     return;
   }
 
-  const identifier = parts[1]; // "00" for admin, floor number for users
+  const identifier = parts[1];
+  const role = identifier === "00" ? "admin" : "user";
 
-  if (identifier === "00") {
-    // ---- ADMIN LOGIN ----
-    const adminPassword = localStorage.getItem("adminPassword") || "admin123";
+  try {
+    const data = await apiRequest("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: role === "admin" ? parts[0] : username,
+        password,
+        role,
+      }),
+    });
 
-    if (parts[0] === "admin" && password === adminPassword) {
-      localStorage.setItem("loggedInUser", username);
+    // Save token and user info
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("loggedInUser", data.user.username);
+    localStorage.setItem("currentUser", JSON.stringify(data.user));
+    // Redirect based on role
+    if (role === "admin") {
       window.location.href = "admin-dashboard.html";
     } else {
-      alert("Invalid admin credentials");
-    }
-  } else {
-    // ---- USER LOGIN ----
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const foundUser = users.find(
-      (u) => u.username.toLowerCase() === username && u.password === password,
-    );
-
-    if (foundUser) { 
-      localStorage.setItem("loggedInUser", foundUser.username);
       window.location.href = "user-dashboard.html";
-    } else {
-      alert("Invalid credentials");
     }
+  } catch (error) {
+    alert("❌ " + error.message);
   }
 });
