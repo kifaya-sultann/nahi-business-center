@@ -21,6 +21,17 @@ document.getElementById("logout").addEventListener("click", () => {
   window.location.href = "login.html";
 });
 
+// Block access if not logged in as admin
+const currentUserRaw = localStorage.getItem("currentUser");
+const currentUser = currentUserRaw ? JSON.parse(currentUserRaw) : null;
+if (
+  !localStorage.getItem("token") ||
+  !currentUser ||
+  currentUser.role !== "admin"
+) {
+  window.location.href = "login.html";
+}
+
 // Data
 let users = [];
 let payments = [];
@@ -49,6 +60,9 @@ async function loadAllData() {
     loadServiceRequests(),
     loadDashboard(),
   ]);
+  // Re-render these two once everything has actually finished loading
+  renderUsers();
+  renderPayments();
 }
 
 // =====================

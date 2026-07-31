@@ -1,7 +1,28 @@
-window.addEventListener("load", () => {
-  const spaces = JSON.parse(localStorage.getItem("spaces")) || [];
+// 1. UNCOMMENT THIS LINE SO THE CODE RUNS
+window.addEventListener("load", async () => {
   const container = document.getElementById("availableSpaces");
   const filterContainer = document.getElementById("floorFilters");
+
+  container.innerHTML = `<div class="no-spaces">Loading available spaces...</div>`;
+
+  let spaces = [];
+
+  try {
+    // 2. CHANGE THIS TO YOUR FULL RENDER URL (Not just /api/spaces)
+    const response = await fetch(
+      "https://rental-backend-cwfx.onrender.com/api/spaces",
+    );
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    spaces = await response.json();
+  } catch (err) {
+    console.error("Failed to load spaces:", err);
+    container.innerHTML = `<div class="no-spaces">Unable to load spaces right now. Please try again later or <a href="contact.html" style="color:#22c55e;">contact us</a>.</div>`;
+    return;
+  }
 
   const available = spaces.filter((s) => s.status === "Available");
 
