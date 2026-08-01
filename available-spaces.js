@@ -1,4 +1,3 @@
-// 1. UNCOMMENT THIS LINE SO THE CODE RUNS
 window.addEventListener("load", async () => {
   const container = document.getElementById("availableSpaces");
   const filterContainer = document.getElementById("floorFilters");
@@ -6,24 +5,14 @@ window.addEventListener("load", async () => {
   container.innerHTML = `<div class="no-spaces">Loading available spaces...</div>`;
 
   let spaces = [];
-
   try {
-    // 2. CHANGE THIS TO YOUR FULL RENDER URL (Not just /api/spaces)
-    const response = await fetch(
-      "https://rental-backend-cwfx.onrender.com/api/spaces",
-    );
-
-    if (!response.ok) {
-      throw new Error(`Server responded with status ${response.status}`);
-    }
-
-    spaces = await response.json();
+    spaces = await apiRequest("/spaces");
   } catch (err) {
-    console.error("Failed to load spaces:", err);
     container.innerHTML = `<div class="no-spaces">Unable to load spaces right now. Please try again later or <a href="contact.html" style="color:#22c55e;">contact us</a>.</div>`;
     return;
   }
 
+  spaces.forEach(normalizeId);
   const available = spaces.filter((s) => s.status === "Available");
 
   if (available.length === 0) {
@@ -31,26 +20,21 @@ window.addEventListener("load", async () => {
     return;
   }
 
-  // Get unique floors
   const floors = [...new Set(available.map((s) => s.floor))].sort();
 
-  // Build filter buttons
   filterContainer.innerHTML = `
     <button class="filter-btn active" onclick="filterFloor('all')">All</button>
     ${floors.map((f) => `<button class="filter-btn" onclick="filterFloor(${f})">Floor ${f}</button>`).join("")}
   `;
 
-  // Render all spaces
   renderSpaces(available);
 
   window.filterFloor = function (floor) {
-    // Update active button
     document
       .querySelectorAll(".filter-btn")
       .forEach((btn) => btn.classList.remove("active"));
     event.target.classList.add("active");
 
-    // Filter and render
     const filtered =
       floor === "all" ? available : available.filter((s) => s.floor === floor);
     renderSpaces(filtered);
