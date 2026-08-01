@@ -418,20 +418,20 @@ function renderUsers() {
     const actionsHTML =
       user.status === "Moved Out"
         ? `
-        <button class="btn-paid" onclick="reactivate('${user.id || user._id}')">🔄 Reactivate</button>
-        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
-        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
+        <button class="btn-paid" onclick="reactivate('${user.id}')">🔄 Reactivate</button>
+        <button class="btn-edit" onclick="editUser('${user.id}')">Edit</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
       `
         : `
-        <button class="btn-paid" onclick="markPaid('${user.id || user._id}')">✅ Paid</button>
-        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
-        <button class="btn-moveout" onclick="moveOut('${user.id || user._id}')">🚪 Move Out</button>
-        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
+        <button class="btn-paid" onclick="markPaid('${user.id}')">✅ Paid</button>
+        <button class="btn-edit" onclick="editUser('${user.id}')">Edit</button>
+        <button class="btn-moveout" onclick="moveOut('${user.id}')">🚪 Move Out</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
       `;
 
     table.innerHTML += `
       <tr style="${user.status === "Moved Out" ? "opacity:0.6;" : ""}">
-        <td>${user.id || user._id}</td>
+        <td>${user.id}</td>
         <td>${user.username}</td>
         <td>${user.email}</td>
         <td>${user.phone}</td>
@@ -449,7 +449,7 @@ function renderUsers() {
 }
 
 async function markPaid(id) {
-  const user = users.find((u) => (u.id || u._id) == id);
+  const user = users.find((u) => u.id == id);
   if (!user) return;
   try {
     const result = await apiRequest("/payments", {
@@ -474,7 +474,7 @@ async function moveOut(id) {
     )
   )
     return;
-  const user = users.find((u) => (u.id || u._id) == id);
+  const user = users.find((u) => u.id == id);
   if (!user) return;
   try {
     await apiRequest(`/users/${id}/status`, {
@@ -507,7 +507,7 @@ async function moveOut(id) {
 
 async function reactivate(id) {
   if (!confirm("Reactivate this user?")) return;
-  const user = users.find((u) => (u.id || u._id) == id);
+  const user = users.find((u) => u.id == id);
   if (!user) return;
   try {
     await apiRequest(`/users/${id}/status`, {
@@ -524,7 +524,7 @@ async function reactivate(id) {
         s.size === user.space,
     );
     if (spaceToRemove) {
-      await apiRequest(`/spaces/${spaceToRemove.id || spaceToRemove._id}`, {
+      await apiRequest(`/spaces/${spaceToRemove.id}`, {
         method: "DELETE",
       });
     }
@@ -539,8 +539,8 @@ async function reactivate(id) {
 }
 
 function editUser(id) {
-  const user = users.find((u) => (u.id || u._id) == id);
-  document.getElementById("userId").value = user.id || user._id;
+  const user = users.find((u) => u.id == id);
+  document.getElementById("userId").value = user.id;
   document.getElementById("username").value = user.username;
   document.getElementById("email").value = user.email;
   document.getElementById("phone").value = user.phone;
@@ -689,18 +689,18 @@ function renderServiceRequests(requests = []) {
       let actionsHTML = "";
       if (r.status === "Pending") {
         actionsHTML = `
-          <button class="btn-edit" onclick="updateServiceRequest('${r.id || r._id}', 'In Progress')">🔄 In Progress</button>
-          <button class="btn-paid" onclick="updateServiceRequest('${r.id || r._id}', 'Done')">✅ Done</button>
+          <button class="btn-edit" onclick="updateServiceRequest('${r.id}', 'In Progress')">🔄 In Progress</button>
+          <button class="btn-paid" onclick="updateServiceRequest('${r.id}', 'Done')">✅ Done</button>
         `;
       } else if (r.status === "In Progress") {
-        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest('${r.id || r._id}', 'Done')">✅ Mark Done</button>`;
+        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest('${r.id}', 'Done')">✅ Mark Done</button>`;
       } else {
         actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
       }
 
       table.innerHTML += `
         <tr>
-          <td>${r.id || r._id}</td>
+          <td>${r.id}</td>
           <td>${r.tenant}</td>
           <td>${r.type}</td>
           <td>${r.description}</td>
@@ -790,15 +790,15 @@ function renderSpaces() {
         : `<span style="color:#e53e3e;font-weight:bold;">🔴 Occupied</span>`;
     table.innerHTML += `
       <tr>
-        <td>${s.id || s._id}</td>
+        <td>${s.id}</td>
         <td>Floor ${s.floor}</td>
         <td>Room ${s.room}</td>
         <td>${s.size} m2</td>
         <td>$${parseFloat(s.price).toFixed(2)}/month</td>
         <td>${statusHTML}</td>
         <td>
-          <button class="btn-edit" onclick="editSpace('${s.id || s._id}')">Edit</button>
-          <button class="btn-delete" onclick="deleteSpace('${s.id || s._id}')">Delete</button>
+          <button class="btn-edit" onclick="editSpace('${s.id}')">Edit</button>
+          <button class="btn-delete" onclick="deleteSpace('${s.id}')">Delete</button>
         </td>
       </tr>
     `;
@@ -806,8 +806,8 @@ function renderSpaces() {
 }
 
 function editSpace(id) {
-  const s = spaces.find((s) => (s.id || s._id) == id);
-  document.getElementById("spaceId").value = s.id || s._id;
+  const s = spaces.find((s) => s.id == id);
+  document.getElementById("spaceId").value = s.id;
   document.getElementById("spaceFloor").value = s.floor;
   document.getElementById("spaceRoom").value = s.room;
   document.getElementById("spaceSize").value = s.size;
@@ -914,7 +914,7 @@ function renderExpenses() {
         e.period === 15 ? "15 Days" : e.period === 30 ? "1 Month" : "3 Months";
       table.innerHTML += `
         <tr>
-          <td>${e.id || e._id}</td>
+          <td>${e.id}</td>
           <td>${e.name}</td>
           <td>${e.reason}</td>
           <td>$${parseFloat(e.amount).toFixed(2)}</td>
@@ -923,8 +923,8 @@ function renderExpenses() {
           <td>${e.dueDate || "—"}</td>
           <td>${countdownHTML}</td>
           <td>
-            <button class="btn-edit" onclick="editExpense('${e.id || e._id}')">Edit</button>
-            <button class="btn-delete" onclick="deleteExpense('${e.id || e._id}')">Delete</button>
+            <button class="btn-edit" onclick="editExpense('${e.id}')">Edit</button>
+            <button class="btn-delete" onclick="deleteExpense('${e.id}')">Delete</button>
           </td>
         </tr>
       `;
@@ -937,8 +937,8 @@ function renderExpenses() {
 }
 
 function editExpense(id) {
-  const e = expenses.find((e) => (e.id || e._id) == id);
-  document.getElementById("expenseId").value = e.id || e._id;
+  const e = expenses.find((e) => e.id == id);
+  document.getElementById("expenseId").value = e.id;
   document.getElementById("expenseName").value = e.name;
   document.getElementById("expenseReason").value = e.reason;
   document.getElementById("expenseAmount").value = e.amount;
