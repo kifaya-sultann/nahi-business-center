@@ -60,14 +60,9 @@ async function loadAllData() {
     loadServiceRequests(),
     loadDashboard(),
   ]);
-  // Re-render these two once everything has actually finished loading
   renderUsers();
   renderPayments();
 }
-
-// =====================
-// LOAD FROM BACKEND
-// =====================
 
 async function loadUsers() {
   try {
@@ -164,10 +159,6 @@ async function loadDashboard() {
   }
 }
 
-// =====================
-// SETTINGS
-// =====================
-
 function saveSettings() {
   const val = parseFloat(document.getElementById("pricePerM2").value);
   if (!val || val <= 0) {
@@ -228,10 +219,6 @@ function showMsg(id, text, color) {
   setTimeout(() => (el.textContent = ""), 3000);
 }
 
-// =====================
-// AUTO CALCULATE
-// =====================
-
 document.getElementById("space").addEventListener("input", calcAmount);
 document.getElementById("period").addEventListener("change", calcAmount);
 document.getElementById("spaceSize").addEventListener("input", calcSpacePrice);
@@ -277,10 +264,6 @@ function calcSpacePrice() {
   document.getElementById("spacePrice").value =
     price > 0 ? "$" + price.toFixed(2) + "/month" : "";
 }
-
-// =====================
-// USERS
-// =====================
 
 async function saveUser() {
   const id = document.getElementById("userId").value;
@@ -435,15 +418,15 @@ function renderUsers() {
     const actionsHTML =
       user.status === "Moved Out"
         ? `
-        <button class="btn-paid" onclick="reactivate('${user._id || user.id}')">🔄 Reactivate</button>
-        <button class="btn-edit" onclick="editUser('${user._id || user.id}')">Edit</button>
-        <button class="btn-delete" onclick="deleteUser('${user._id || user.id}')">Delete</button>
+        <button class="btn-paid" onclick="reactivate('${user.id || user._id}')">🔄 Reactivate</button>
+        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
       `
         : `
-        <button class="btn-paid" onclick="markPaid('${user._id || user.id}')">✅ Paid</button>
-        <button class="btn-edit" onclick="editUser('${user._id || user.id}')">Edit</button>
-        <button class="btn-moveout" onclick="moveOut('${user._id || user.id}')">🚪 Move Out</button>
-        <button class="btn-delete" onclick="deleteUser('${user._id || user.id}')">Delete</button>
+        <button class="btn-paid" onclick="markPaid('${user.id || user._id}')">✅ Paid</button>
+        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
+        <button class="btn-moveout" onclick="moveOut('${user.id || user._id}')">🚪 Move Out</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
       `;
 
     table.innerHTML += `
@@ -466,7 +449,7 @@ function renderUsers() {
 }
 
 async function markPaid(id) {
-  const user = users.find((u) => (u._id || u.id) == id);
+  const user = users.find((u) => (u.id || u._id) == id);
   if (!user) return;
   try {
     const result = await apiRequest("/payments", {
@@ -491,7 +474,7 @@ async function moveOut(id) {
     )
   )
     return;
-  const user = users.find((u) => (u._id || u.id) == id);
+  const user = users.find((u) => (u.id || u._id) == id);
   if (!user) return;
   try {
     await apiRequest(`/users/${id}/status`, {
@@ -499,7 +482,6 @@ async function moveOut(id) {
       body: JSON.stringify({ status: "Moved Out" }),
     });
 
-    // Add space to backend
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
     const price = user.space * pricePerM2;
@@ -525,7 +507,7 @@ async function moveOut(id) {
 
 async function reactivate(id) {
   if (!confirm("Reactivate this user?")) return;
-  const user = users.find((u) => (u._id || u.id) == id);
+  const user = users.find((u) => (u.id || u._id) == id);
   if (!user) return;
   try {
     await apiRequest(`/users/${id}/status`, {
@@ -533,7 +515,6 @@ async function reactivate(id) {
       body: JSON.stringify({ status: "Active" }),
     });
 
-    // Remove space from backend
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
     const spaceToRemove = spaces.find(
@@ -543,7 +524,7 @@ async function reactivate(id) {
         s.size === user.space,
     );
     if (spaceToRemove) {
-      await apiRequest(`/spaces/${spaceToRemove._id || spaceToRemove.id}`, {
+      await apiRequest(`/spaces/${spaceToRemove.id || spaceToRemove._id}`, {
         method: "DELETE",
       });
     }
@@ -558,8 +539,8 @@ async function reactivate(id) {
 }
 
 function editUser(id) {
-  const user = users.find((u) => (u._id || u.id) == id);
-  document.getElementById("userId").value = user._id || user.id;
+  const user = users.find((u) => (u.id || u._id) == id);
+  document.getElementById("userId").value = user.id || user._id;
   document.getElementById("username").value = user.username;
   document.getElementById("email").value = user.email;
   document.getElementById("phone").value = user.phone;
@@ -604,10 +585,6 @@ function clearForm() {
   btn.style.color = "#555";
   btn.style.borderColor = "#ddd";
 }
-
-// =====================
-// PAYMENTS
-// =====================
 
 let currentPaymentPage = 1;
 const paymentsPerPage = 5;
@@ -693,10 +670,6 @@ function renderPayments() {
   pagination.appendChild(nextBtn);
 }
 
-// =====================
-// SERVICE REQUESTS
-// =====================
-
 function renderServiceRequests(requests = []) {
   const table = document.getElementById("serviceRequestsTable");
   table.innerHTML = "";
@@ -716,11 +689,11 @@ function renderServiceRequests(requests = []) {
       let actionsHTML = "";
       if (r.status === "Pending") {
         actionsHTML = `
-          <button class="btn-edit" onclick="updateServiceRequest('${r._id || r.id}', 'In Progress')">🔄 In Progress</button>
-          <button class="btn-paid" onclick="updateServiceRequest('${r._id || r.id}', 'Done')">✅ Done</button>
+          <button class="btn-edit" onclick="updateServiceRequest('${r.id || r._id}', 'In Progress')">🔄 In Progress</button>
+          <button class="btn-paid" onclick="updateServiceRequest('${r.id || r._id}', 'Done')">✅ Done</button>
         `;
       } else if (r.status === "In Progress") {
-        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest('${r._id || r.id}', 'Done')">✅ Mark Done</button>`;
+        actionsHTML = `<button class="btn-paid" onclick="updateServiceRequest('${r.id || r._id}', 'Done')">✅ Mark Done</button>`;
       } else {
         actionsHTML = `<span style="color:#999;font-size:12px;">—</span>`;
       }
@@ -770,10 +743,6 @@ async function updateServiceRequest(id, status) {
     alert("❌ " + e.message);
   }
 }
-
-// =====================
-// SPACES
-// =====================
 
 async function saveSpace() {
   const id = document.getElementById("spaceId").value;
@@ -828,8 +797,8 @@ function renderSpaces() {
         <td>$${parseFloat(s.price).toFixed(2)}/month</td>
         <td>${statusHTML}</td>
         <td>
-          <button class="btn-edit" onclick="editSpace('${s._id || s.id}')">Edit</button>
-          <button class="btn-delete" onclick="deleteSpace('${s._id || s.id}')">Delete</button>
+          <button class="btn-edit" onclick="editSpace('${s.id || s._id}')">Edit</button>
+          <button class="btn-delete" onclick="deleteSpace('${s.id || s._id}')">Delete</button>
         </td>
       </tr>
     `;
@@ -837,8 +806,8 @@ function renderSpaces() {
 }
 
 function editSpace(id) {
-  const s = spaces.find((s) => (s._id || s.id) == id);
-  document.getElementById("spaceId").value = s._id || s.id;
+  const s = spaces.find((s) => (s.id || s._id) == id);
+  document.getElementById("spaceId").value = s.id || s._id;
   document.getElementById("spaceFloor").value = s.floor;
   document.getElementById("spaceRoom").value = s.room;
   document.getElementById("spaceSize").value = s.size;
@@ -865,10 +834,6 @@ function clearSpaceForm() {
   document.getElementById("spaceStatus").value = "Available";
   document.getElementById("spacePrice").value = "";
 }
-
-// =====================
-// EXPENSES
-// =====================
 
 async function saveExpense() {
   const id = document.getElementById("expenseId").value;
@@ -958,8 +923,8 @@ function renderExpenses() {
           <td>${e.dueDate || "—"}</td>
           <td>${countdownHTML}</td>
           <td>
-            <button class="btn-edit" onclick="editExpense('${e._id || e.id}')">Edit</button>
-            <button class="btn-delete" onclick="deleteExpense('${e._id || e.id}')">Delete</button>
+            <button class="btn-edit" onclick="editExpense('${e.id || e._id}')">Edit</button>
+            <button class="btn-delete" onclick="deleteExpense('${e.id || e._id}')">Delete</button>
           </td>
         </tr>
       `;
@@ -972,8 +937,8 @@ function renderExpenses() {
 }
 
 function editExpense(id) {
-  const e = expenses.find((e) => (e._id || e.id) == id);
-  document.getElementById("expenseId").value = e._id || e.id;
+  const e = expenses.find((e) => (e.id || e._id) == id);
+  document.getElementById("expenseId").value = e.id || e._id;
   document.getElementById("expenseName").value = e.name;
   document.getElementById("expenseReason").value = e.reason;
   document.getElementById("expenseAmount").value = e.amount;
