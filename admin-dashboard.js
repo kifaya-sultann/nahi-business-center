@@ -52,9 +52,9 @@ window.addEventListener("load", async () => {
 });
 
 async function loadAllData() {
-  await loadUsers();
+  await loadUsers(); // Load users FIRST
   await Promise.all([
-    loadPayments(),
+    loadPayments(), // Then payments (will use users data)
     loadSpaces(),
     loadExpenses(),
     loadServiceRequests(),
@@ -72,10 +72,14 @@ async function loadUsers() {
     console.error("Failed to load users:", e);
   }
 }
-
 async function loadPayments() {
   try {
-    payments = await apiRequest("/payments/all");
+    const allPayments = await apiRequest("/payments/all");
+
+    // Only show payments from users that still exist
+    const activeUsernames = users.map((u) => u.username);
+    payments = allPayments.filter((p) => activeUsernames.includes(p.tenant));
+
     renderPayments();
   } catch (e) {
     console.error("Failed to load payments:", e);
@@ -123,35 +127,54 @@ async function loadDashboard() {
     if (!stats.recentPayments || stats.recentPayments.length === 0) {
       recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
     } else {
-      stats.recentPayments.forEach((p) => {
-        const isMovedOut = users.find(
-          (u) => u.username === p.tenant && u.status === "Moved Out",
-        );
-        recentTable.innerHTML += `
-          <tr>
-            <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-            <td>$${parseFloat(p.amount).toFixed(2)}</td>
-            <td>${p.datePaid}</td>
-            <td>${p.nextDue}</td>
-          </tr>
-        `;
-      });
+      // ✅ Filter out payments from deleted users
+      const activeUsernames = users.map((u) => u.username);
+      const filteredPayments = stats.recentPayments.filter((p) =>
+        activeUsernames.includes(p.tenant),
+      );
+
+      if (filteredPayments.length === 0) {
+        recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments from active users</td></tr>`;
+      } else {
+        filteredPayments.forEach((p) => {
+          const userExists = users.find((u) => u.username === p.tenant);
+          const isMovedOut = userExists
+            ? userExists.status === "Moved Out"
+            : false;
+
+          recentTable.innerHTML += `
+            <tr>
+              <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
+              <td>$${parseFloat(p.amount).toFixed(2)}</td>
+              <td>${p.datePaid}</td>
+              <td>${p.nextDue}</td>
+            </tr>
+          `;
+        });
+      }
     }
+    // ... rest of the function continues
 
     const overdueTable = document.getElementById("overdueTable");
     overdueTable.innerHTML = "";
-    if (!stats.overdueTenants || stats.overdueTenants.length === 0) {
+    // ✅ Filter out overdue tenants that don't exist anymore
+    const activeUsernames = users.map((u) => u.username);
+    const filteredOverdue = stats.overdueTenants
+      ? stats.overdueTenants.filter((u) => activeUsernames.includes(u.username))
+      : [];
+
+    if (!filteredOverdue || filteredOverdue.length === 0) {
       overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
     } else {
-      stats.overdueTenants.forEach((u) => {
+      filteredOverdue.forEach((u) => {
         overdueTable.innerHTML += `
-          <tr>
-            <td>${u.username}</td>
-            <td>${u.phone}</td>
-            <td>$${parseFloat(u.amount).toFixed(2)}</td>
-            <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
-          </tr>
-        `;
+      <tr>
+        <td>${u.username}</td>
+        <td>${u.phone}</td>
+        <td>$${parseFloat(u.amount).toFixed(2)}</td>
+        <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
+      </tr>
+    `;
       });
     }
   } catch (e) {
