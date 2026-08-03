@@ -52,8 +52,8 @@ window.addEventListener("load", async () => {
 });
 
 async function loadAllData() {
+  await loadUsers();
   await Promise.all([
-    loadUsers(),
     loadPayments(),
     loadSpaces(),
     loadExpenses(),
@@ -459,9 +459,13 @@ async function markPaid(id) {
     await loadPayments();
     await loadUsers();
     await loadDashboard();
-    alert(
-      `✅ ${user.username} marked as paid. Next due: ${result.payment.nextDue}`,
-    );
+    if (result && result.payment && result.payment.nextDue) {
+      alert(
+        `✅ ${user.username} marked as paid. Next due: ${result.payment.nextDue}`,
+      );
+    } else {
+      alert(`✅ ${user.username} marked as paid!`);
+    }
   } catch (e) {
     alert("❌ " + e.message);
   }
@@ -517,26 +521,16 @@ async function reactivate(id) {
 
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
-
-    // Find and delete the space
     const spaceToRemove = spaces.find(
       (s) =>
         s.floor === floorNumber &&
         s.status === "Available" &&
         s.size === user.space,
     );
-
     if (spaceToRemove) {
-      try {
-        await apiRequest(`/spaces/${spaceToRemove.id}`, {
-          method: "DELETE",
-        });
-        console.log("✅ Space deleted:", spaceToRemove.id);
-      } catch (e) {
-        console.warn("⚠️ Space deletion failed, continuing...");
-      }
-    } else {
-      console.log("ℹ️ No space found to delete");
+      await apiRequest(`/spaces/${spaceToRemove.id}`, {
+        method: "DELETE",
+      });
     }
 
     await loadUsers();
@@ -547,6 +541,7 @@ async function reactivate(id) {
     alert("❌ " + e.message);
   }
 }
+
 function editUser(id) {
   const user = users.find((u) => u.id == id);
   document.getElementById("userId").value = user.id;
