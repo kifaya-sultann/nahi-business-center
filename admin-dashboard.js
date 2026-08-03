@@ -72,9 +72,17 @@ async function loadUsers() {
     console.error("Failed to load users:", e);
   }
 }
+
 async function loadPayments() {
   try {
     const allPayments = await apiRequest("/payments/all");
+
+    // If no users exist, show no payments
+    if (users.length === 0) {
+      payments = [];
+      renderPayments();
+      return;
+    }
 
     // Only show payments from users that still exist
     const activeUsernames = users.map((u) => u.username);
@@ -116,6 +124,22 @@ async function loadServiceRequests() {
 async function loadDashboard() {
   try {
     const stats = await apiRequest("/dashboard/stats");
+
+    // If no users exist, show empty state
+    if (users.length === 0) {
+      document.getElementById("totalUsers").textContent = "0";
+      document.getElementById("totalRevenue").textContent = "$0.00";
+      document.getElementById("overdueCount").textContent = "0";
+      document.getElementById("dueThisMonth").textContent = "0";
+
+      const recentTable = document.getElementById("recentPaymentsTable");
+      recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No users found</td></tr>`;
+
+      const overdueTable = document.getElementById("overdueTable");
+      overdueTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#22c55e;font-weight:bold">✅ All tenants are up to date!</td></tr>`;
+      return;
+    }
+
     document.getElementById("totalUsers").textContent = stats.totalUsers;
     document.getElementById("totalRevenue").textContent =
       "$" + stats.totalRevenue.toFixed(2);
@@ -127,7 +151,7 @@ async function loadDashboard() {
     if (!stats.recentPayments || stats.recentPayments.length === 0) {
       recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
     } else {
-      // ✅ Filter out payments from deleted users
+      // Filter out payments from deleted users
       const activeUsernames = users.map((u) => u.username);
       const filteredPayments = stats.recentPayments.filter((p) =>
         activeUsernames.includes(p.tenant),
@@ -153,14 +177,15 @@ async function loadDashboard() {
         });
       }
     }
-    // ... rest of the function continues
 
     const overdueTable = document.getElementById("overdueTable");
     overdueTable.innerHTML = "";
-    // ✅ Filter out overdue tenants that don't exist anymore
-    const activeUsernames = users.map((u) => u.username);
+    // Filter out overdue tenants that don't exist anymore
+    const activeUsernames2 = users.map((u) => u.username);
     const filteredOverdue = stats.overdueTenants
-      ? stats.overdueTenants.filter((u) => activeUsernames.includes(u.username))
+      ? stats.overdueTenants.filter((u) =>
+          activeUsernames2.includes(u.username),
+        )
       : [];
 
     if (!filteredOverdue || filteredOverdue.length === 0) {
@@ -168,13 +193,13 @@ async function loadDashboard() {
     } else {
       filteredOverdue.forEach((u) => {
         overdueTable.innerHTML += `
-      <tr>
-        <td>${u.username}</td>
-        <td>${u.phone}</td>
-        <td>$${parseFloat(u.amount).toFixed(2)}</td>
-        <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
-      </tr>
-    `;
+          <tr>
+            <td>${u.username}</td>
+            <td>${u.phone}</td>
+            <td>$${parseFloat(u.amount).toFixed(2)}</td>
+            <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
+          </tr>
+        `;
       });
     }
   } catch (e) {
