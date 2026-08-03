@@ -52,14 +52,40 @@ window.addEventListener("load", async () => {
 });
 
 async function loadAllData() {
-  await loadUsers(); // Load users FIRST
+  // 1. Load users first
+  await loadUsers();
+
+  // 2. Load settings from backend
+  try {
+    const settings = await apiRequest("/settings");
+    pricePerM2 = settings.pricePerM2 || 10;
+    document.getElementById("pricePerM2").value = pricePerM2;
+    document.getElementById("settingsPhone").value = settings.phone || "";
+    document.getElementById("settingsEmail").value = settings.email || "";
+    document.getElementById("settingsTelegram").value = settings.telegram || "";
+  } catch (e) {
+    console.error("Failed to load settings from backend:", e);
+    // Fallback to localStorage if backend fails
+    pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
+    document.getElementById("pricePerM2").value = pricePerM2;
+    document.getElementById("settingsPhone").value =
+      localStorage.getItem("bizPhone") || "";
+    document.getElementById("settingsEmail").value =
+      localStorage.getItem("bizEmail") || "";
+    document.getElementById("settingsTelegram").value =
+      localStorage.getItem("bizTelegram") || "";
+  }
+
+  // 3. Load all other data
   await Promise.all([
-    loadPayments(), // Then payments (will use users data)
+    loadPayments(),
     loadSpaces(),
     loadExpenses(),
     loadServiceRequests(),
     loadDashboard(),
   ]);
+
+  // 4. Render everything
   renderUsers();
   renderPayments();
 }
@@ -207,38 +233,53 @@ async function loadDashboard() {
   }
 }
 
-function saveSettings() {
+async function saveSettings() {
   const val = parseFloat(document.getElementById("pricePerM2").value);
   if (!val || val <= 0) {
     alert("Please enter a valid price");
     return;
   }
-  pricePerM2 = val;
-  localStorage.setItem("pricePerM2", pricePerM2);
-  showMsg("settingsMsg", "✅ Price saved: $" + pricePerM2 + " per m2", "green");
+
+  try {
+    await apiRequest("/settings", {
+      method: "PUT",
+      body: JSON.stringify({ pricePerM2: val }),
+    });
+    pricePerM2 = val;
+    showMsg("settingsMsg", "✅ Price saved successfully!", "green");
+  } catch (e) {
+    showMsg("settingsMsg", "❌ " + e.message, "red");
+  }
 }
 
-function saveBusinessInfo() {
+async function saveBusinessInfo() {
   const phone = document.getElementById("settingsPhone").value.trim();
   const email = document.getElementById("settingsEmail").value.trim();
   const telegram = document.getElementById("settingsTelegram").value.trim();
+
   if (!phone || !email || !telegram) {
     alert("Please fill all fields");
     return;
   }
-  localStorage.setItem("bizPhone", phone);
-  localStorage.setItem("bizEmail", email);
-  localStorage.setItem("bizTelegram", telegram);
-  showMsg("businessInfoMsg", "✅ Business info saved!", "green");
+
+  try {
+    await apiRequest("/settings/business", {
+      method: "PUT",
+      body: JSON.stringify({ phone, email, telegram }),
+    });
+    showMsg("businessInfoMsg", "✅ Business info saved!", "green");
+  } catch (e) {
+    showMsg("businessInfoMsg", "❌ " + e.message, "red");
+  }
 }
 
-function changePassword() {
+async function changePassword() {
   const current = document.getElementById("currentPassword").value;
   const newPass = document.getElementById("newPassword").value;
   const confirm = document.getElementById("confirmPassword").value;
-  const savedPassword = localStorage.getItem("adminPassword") || "admin123";
-  if (current !== savedPassword) {
-    showMsg("passwordMsg", "❌ Current password is incorrect", "red");
+
+  if (!current) {
+    showMsg("passwordMsg", "❌ Please enter current password", "red");
     return;
   }
   if (!newPass || newPass.length < 4) {
@@ -253,11 +294,22 @@ function changePassword() {
     showMsg("passwordMsg", "❌ Passwords do not match", "red");
     return;
   }
-  localStorage.setItem("adminPassword", newPass);
-  document.getElementById("currentPassword").value = "";
-  document.getElementById("newPassword").value = "";
-  document.getElementById("confirmPassword").value = "";
-  showMsg("passwordMsg", "✅ Password changed successfully!", "green");
+
+  try {
+    await apiRequest("/auth/change-password", {
+      method: "PUT",
+      body: JSON.stringify({
+        currentPassword: current,
+        newPassword: newPass,
+      }),
+    });
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmPassword").value = "";
+    showMsg("passwordMsg", "✅ Password changed successfully!", "green");
+  } catch (e) {
+    showMsg("passwordMsg", "❌ " + e.message, "red");
+  }
 }
 
 function showMsg(id, text, color) {
