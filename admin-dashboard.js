@@ -517,16 +517,26 @@ async function reactivate(id) {
 
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
+
+    // Find and delete the space
     const spaceToRemove = spaces.find(
       (s) =>
         s.floor === floorNumber &&
         s.status === "Available" &&
         s.size === user.space,
     );
+
     if (spaceToRemove) {
-      await apiRequest(`/spaces/${spaceToRemove.id}`, {
-        method: "DELETE",
-      });
+      try {
+        await apiRequest(`/spaces/${spaceToRemove.id}`, {
+          method: "DELETE",
+        });
+        console.log("✅ Space deleted:", spaceToRemove.id);
+      } catch (e) {
+        console.warn("⚠️ Space deletion failed, continuing...");
+      }
+    } else {
+      console.log("ℹ️ No space found to delete");
     }
 
     await loadUsers();
@@ -537,7 +547,6 @@ async function reactivate(id) {
     alert("❌ " + e.message);
   }
 }
-
 function editUser(id) {
   const user = users.find((u) => u.id == id);
   document.getElementById("userId").value = user.id;
