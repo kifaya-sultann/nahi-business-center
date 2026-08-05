@@ -16,23 +16,38 @@ links.forEach((link) => {
 
 // Logout
 document.getElementById("logout").addEventListener("click", () => {
-  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("token");
+  localStorage.removeItem("currentUser");
   window.location.href = "login.html";
 });
 
 // Data
-const loggedInUsername = localStorage.getItem("loggedInUser") || "user";
-const users = JSON.parse(localStorage.getItem("users")) || [];
-const payments = JSON.parse(localStorage.getItem("payments")) || [];
-const currentUser = users.find((u) => u.username === loggedInUsername);
+let currentUser = null;
+let userPayments = [];
+let userRequests = [];
 
 // Load on start
-window.addEventListener("load", () => {
-  if (!currentUser) {
-    alert("User not found. Please login again.");
+window.addEventListener("load", async () => {
+  // Check if user is logged in
+  const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("currentUser") || "null");
+
+  if (!token || !userData) {
+    alert("Please login first");
     window.location.href = "login.html";
     return;
   }
+
+  // Set current user
+  currentUser = userData;
+
+  // Load all data from backend
+  await loadUserData();
+  await loadUserPayments();
+  await loadUserRequests();
+  await loadSettings();
+
+  // Render everything
   loadMySpace();
   loadMyPayments();
   loadCountdown();
@@ -40,11 +55,62 @@ window.addEventListener("load", () => {
   loadMyRequests();
 });
 
-// My Space
+// =====================
+// LOAD FROM BACKEND
+// =====================
+
+async function loadUserData() {
+  try {
+    const user = await apiRequest("/users/me");
+    currentUser = user;
+    localStorage.setItem("currentUser", JSON.stringify(user));
+  } catch (e) {
+    console.error("Failed to load user data:", e);
+    alert("Failed to load user data. Please try again.");
+  }
+}
+
+async function loadUserPayments() {
+  try {
+    userPayments = await apiRequest("/payments/my");
+  } catch (e) {
+    console.error("Failed to load payments:", e);
+    userPayments = [];
+  }
+}
+
+async function loadUserRequests() {
+  try {
+    userRequests = await apiRequest("/service-requests/my");
+  } catch (e) {
+    console.error("Failed to load service requests:", e);
+    userRequests = [];
+  }
+}
+
+async function loadSettings() {
+  try {
+    const settings = await apiRequest("/settings");
+    if (settings.telegram) {
+      document.getElementById("telegramLink").href = settings.telegram;
+    }
+  } catch (e) {
+    console.error("Failed to load settings:", e);
+    // Fallback to localStorage
+    const telegram = localStorage.getItem("bizTelegram") || "#";
+    document.getElementById("telegramLink").href = telegram;
+  }
+}
+
+// =====================
+// MY SPACE (Profile)
+// =====================
+
 function loadMySpace() {
-  const lastPayment = payments
-    .filter((p) => p.tenant === currentUser.username)
-    .pop();
+  if (!currentUser) return;
+
+  const lastPayment =
+    userPayments.length > 0 ? userPayments[userPayments.length - 1] : null;
 
   document.getElementById("userNextDue").textContent = lastPayment
     ? lastPayment.nextDue
@@ -54,54 +120,70 @@ function loadMySpace() {
   detailsTable.innerHTML = `
     <div class="profile-field">
       <span class="profile-field-label">👤 Username</span>
-      <span class="profile-field-value">${currentUser.username}</span>
+      <span class="profile-field-value">${currentUser.username || "—"}</span>
     </div>
     <div class="profile-field">
       <span class="profile-field-label">📧 Email</span>
-      <span class="profile-field-value">${currentUser.email}</span>
+      <span class="profile-field-value">${currentUser.email || "—"}</span>
     </div>
     <div class="profile-field">
       <span class="profile-field-label">📞 Phone</span>
-      <span class="profile-field-value">${currentUser.phone}</span>
+      <span class="profile-field-value">${currentUser.phone || "—"}</span>
+    </div>
+    <div class="profile-field">
+      <span class="profile-field-label">📐 Space</span>
+      <span class="profile-field-value">${currentUser.space || "—"} m²</span>
+    </div>
+    <div class="profile-field">
+      <span class="profile-field-label">📅 Period</span>
+      <span class="profile-field-value">${currentUser.period || "—"} month(s)</span>
+    </div>
+    <div class="profile-field">
+      <span class="profile-field-label">💰 Amount</span>
+      <span class="profile-field-value">$${parseFloat(currentUser.amount || 0).toFixed(2)}</span>
     </div>
   `;
 }
 
-// My Payments
+// =====================
+// MY PAYMENTS
+// =====================
+
 function loadMyPayments() {
   const table = document.getElementById("userPaymentTable");
   table.innerHTML = "";
-  const myPayments = payments.filter((p) => p.tenant === currentUser.username);
 
-  if (myPayments.length === 0) {
+  if (userPayments.length === 0) {
     table.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No payments yet</td></tr>`;
     return;
   }
 
-  [...myPayments].reverse().forEach((p) => {
+  [...userPayments].reverse().forEach((p) => {
     table.innerHTML += `
       <tr>
-        <td>$${p.amount.toFixed(2)}</td>
-        <td>${p.space} m2</td>
-        <td>${p.period} month(s)</td>
-        <td>${p.datePaid}</td>
-        <td>${p.nextDue}</td>
+        <td>$${parseFloat(p.amount).toFixed(2)}</td>
+        <td>${p.space || "—"} m2</td>
+        <td>${p.period || "—"} month(s)</td>
+        <td>${p.datePaid || "—"}</td>
+        <td>${p.nextDue || "—"}</td>
         <td><span style="color:#22c55e;font-weight:bold;">✅ Paid</span></td>
       </tr>
     `;
   });
 }
 
-// Countdown
+// =====================
+// COUNTDOWN
+// =====================
+
 function loadCountdown() {
-  const lastPayment = payments
-    .filter((p) => p.tenant === currentUser.username)
-    .pop();
+  const lastPayment =
+    userPayments.length > 0 ? userPayments[userPayments.length - 1] : null;
   const timerEl = document.getElementById("countdownTimer");
   const dateEl = document.getElementById("countdownDate");
   const statusEl = document.getElementById("countdownStatus");
 
-  if (!lastPayment) {
+  if (!lastPayment || !lastPayment.nextDueRaw) {
     timerEl.textContent = "—";
     dateEl.textContent = "No payment recorded yet";
     statusEl.textContent = "";
@@ -132,14 +214,20 @@ function loadCountdown() {
   }
 }
 
-// Telegram Link
+// =====================
+// TELEGRAM LINK
+// =====================
+
 function loadTelegramLink() {
   const link = localStorage.getItem("bizTelegram") || "#";
   document.getElementById("telegramLink").href = link;
 }
 
-// Submit Request
-function submitRequest() {
+// =====================
+// SUBMIT SERVICE REQUEST
+// =====================
+
+async function submitRequest() {
   const type = document.getElementById("reqType").value;
   const description = document.getElementById("reqDescription").value.trim();
 
@@ -148,39 +236,36 @@ function submitRequest() {
     return;
   }
 
-  let myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
-  const newId =
-    myRequests.length > 0 ? Math.max(...myRequests.map((r) => r.id)) + 1 : 1;
+  try {
+    const result = await apiRequest("/service-requests", {
+      method: "POST",
+      body: JSON.stringify({ type, description }),
+    });
 
-  myRequests.push({
-    id: newId,
-    tenant: currentUser.username,
-    type,
-    description,
-    date: new Date().toLocaleDateString(),
-    status: "Pending",
-  });
-
-  localStorage.setItem("myRequests", JSON.stringify(myRequests));
-  document.getElementById("reqType").value = "";
-  document.getElementById("reqDescription").value = "";
-  loadMyRequests();
-  alert("✅ Request submitted!");
+    document.getElementById("reqType").value = "";
+    document.getElementById("reqDescription").value = "";
+    await loadUserRequests();
+    loadMyRequests();
+    alert("✅ Request submitted!");
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
 }
 
-// Load My Requests
+// =====================
+// LOAD MY REQUESTS
+// =====================
+
 function loadMyRequests() {
-  const myRequests = JSON.parse(localStorage.getItem("myRequests")) || [];
   const table = document.getElementById("myRequestsTable");
   table.innerHTML = "";
-  const mine = myRequests.filter((r) => r.tenant === currentUser.username);
 
-  if (mine.length === 0) {
+  if (userRequests.length === 0) {
     table.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999;padding:20px;">No requests yet</td></tr>`;
     return;
   }
 
-  [...mine].reverse().forEach((r) => {
+  [...userRequests].reverse().forEach((r) => {
     let statusHTML = "";
     if (r.status === "Pending") {
       statusHTML = `<span style="color:#d97706;font-weight:bold;">⏳ Pending</span>`;
@@ -191,9 +276,9 @@ function loadMyRequests() {
     }
     table.innerHTML += `
       <tr>
-        <td>${r.type}</td>
-        <td>${r.description}</td>
-        <td>${r.date}</td>
+        <td>${r.type || "—"}</td>
+        <td>${r.description || "—"}</td>
+        <td>${r.date || "—"}</td>
         <td>${statusHTML}</td>
       </tr>
     `;
@@ -201,9 +286,10 @@ function loadMyRequests() {
 }
 
 // =====================
-// Settings - Change Password
+// CHANGE PASSWORD
 // =====================
-function changePassword() {
+
+async function changePassword() {
   const current = document.getElementById("currentPassword").value.trim();
   const newPass = document.getElementById("newPassword").value.trim();
   const confirm = document.getElementById("confirmPassword").value.trim();
@@ -228,30 +314,23 @@ function changePassword() {
     return;
   }
 
-  // Check against localStorage
-  const allUsers = JSON.parse(localStorage.getItem("users")) || [];
-  const userIndex = allUsers.findIndex((u) => u.username === loggedInUsername);
+  try {
+    await apiRequest("/auth/change-password", {
+      method: "PUT",
+      body: JSON.stringify({
+        currentPassword: current,
+        newPassword: newPass,
+      }),
+    });
 
-  if (userIndex === -1) {
+    msg.classList.add("success");
+    msg.textContent = "✅ Password updated successfully!";
+
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmPassword").value = "";
+  } catch (e) {
     msg.classList.add("error");
-    msg.textContent = "❌ User not found.";
-    return;
+    msg.textContent = "❌ " + e.message;
   }
-
-  if (allUsers[userIndex].password !== current) {
-    msg.classList.add("error");
-    msg.textContent = "❌ Current password is incorrect.";
-    return;
-  }
-
-  // Save new password
-  allUsers[userIndex].password = newPass;
-  localStorage.setItem("users", JSON.stringify(allUsers));
-
-  msg.classList.add("success");
-  msg.textContent = "✅ Password updated successfully!";
-
-  document.getElementById("currentPassword").value = "";
-  document.getElementById("newPassword").value = "";
-  document.getElementById("confirmPassword").value = "";
 }
