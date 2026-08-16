@@ -154,7 +154,7 @@ async function loadDashboard() {
     // If no users exist, show empty state
     if (users.length === 0) {
       document.getElementById("totalUsers").textContent = "0";
-      document.getElementById("totalRevenue").textContent = "$0.00";
+
       document.getElementById("overdueCount").textContent = "0";
       document.getElementById("dueThisMonth").textContent = "0";
 
@@ -167,8 +167,7 @@ async function loadDashboard() {
     }
 
     document.getElementById("totalUsers").textContent = stats.totalUsers;
-    document.getElementById("totalRevenue").textContent =
-      "$" + stats.totalRevenue.toFixed(2);
+
     document.getElementById("overdueCount").textContent = stats.overdueCount;
     document.getElementById("dueThisMonth").textContent = stats.dueThisMonth;
 
