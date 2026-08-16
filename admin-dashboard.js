@@ -626,10 +626,19 @@ async function reactivate(id) {
         s.status === "Available" &&
         s.size === user.space,
     );
+
+    // ✅ Only try to delete if space exists
     if (spaceToRemove) {
-      await apiRequest(`/spaces/${spaceToRemove.id}`, {
-        method: "DELETE",
-      });
+      try {
+        await apiRequest(`/spaces/${spaceToRemove.id}`, {
+          method: "DELETE",
+        });
+        console.log("✅ Space deleted:", spaceToRemove.id);
+      } catch (e) {
+        console.warn("⚠️ Could not delete space:", e.message);
+      }
+    } else {
+      console.log("ℹ️ No space found to delete — continuing");
     }
 
     await loadUsers();
