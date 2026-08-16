@@ -126,6 +126,9 @@ async function loadSpaces() {
     renderSpaces();
   } catch (e) {
     console.error("Failed to load spaces:", e);
+    // ✅ Set spaces to empty array so it doesn't break
+    spaces = [];
+    renderSpaces();
   }
 }
 
@@ -612,33 +615,38 @@ async function reactivate(id) {
   if (!confirm("Reactivate this user?")) return;
   const user = users.find((u) => u.id == id);
   if (!user) return;
+
   try {
     await apiRequest(`/users/${id}/status`, {
       method: "PUT",
       body: JSON.stringify({ status: "Active" }),
     });
 
+    // Try to delete the space if it exists
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
-    const spaceToRemove = spaces.find(
-      (s) =>
-        s.floor === floorNumber &&
-        s.status === "Available" &&
-        s.size === user.space,
-    );
 
-    // ✅ Only try to delete if space exists
-    if (spaceToRemove) {
+    // Make sure spaces array exists
+    const spaceToRemove =
+      spaces && Array.isArray(spaces)
+        ? spaces.find(
+            (s) =>
+              s.floor === floorNumber &&
+              s.status === "Available" &&
+              s.size === user.space,
+          )
+        : null;
+
+    if (spaceToRemove && spaceToRemove.id) {
       try {
         await apiRequest(`/spaces/${spaceToRemove.id}`, {
           method: "DELETE",
         });
         console.log("✅ Space deleted:", spaceToRemove.id);
-      } catch (e) {
-        console.warn("⚠️ Could not delete space:", e.message);
+      } catch (spaceError) {
+        // Just log the error, don't show it to user
+        console.warn("⚠️ Could not delete space:", spaceError.message);
       }
-    } else {
-      console.log("ℹ️ No space found to delete — continuing");
     }
 
     await loadUsers();
@@ -646,6 +654,7 @@ async function reactivate(id) {
     await loadDashboard();
     alert(`✅ ${user.username} has been reactivated!`);
   } catch (e) {
+    console.error("Reactivate error:", e);
     alert("❌ " + e.message);
   }
 }
