@@ -401,11 +401,8 @@ nav a:hover {
     display: block;
   }
 
-  /* ✅ Show Login button in hero section on mobile */
   .btn-login-mobile {
-    display: inline-block;
-    background: white;
-    color: #0f3d2e !important;
+    display: none; /* Hidden on desktop */
     padding: 14px 36px;
     border-radius: 8px;
     text-decoration: none;
@@ -413,16 +410,27 @@ nav a:hover {
     font-size: 15px;
     transition: all 0.3s;
     border: 2px solid white;
+    color: white;
+    background: transparent;
     letter-spacing: 0.5px;
   }
 
   .btn-login-mobile:hover {
-    background: transparent;
-    color: white !important;
+    background: white;
+    color: #0b2e1e;
     transform: translateY(-4px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   }
 
+  /* Show on mobile */
+  @media (max-width: 768px) {
+    .btn-login-mobile {
+      display: inline-block;
+      width: 100%;
+      max-width: 250px;
+      text-align: center;
+    }
+  }
   .hero {
     height: auto;
     min-height: 100vh;
