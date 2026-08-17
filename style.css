@@ -149,6 +149,7 @@ nav a:hover {
   justify-content: center;
   gap: 15px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -180,6 +181,11 @@ nav a:hover {
 .btn.outline:hover {
   background: var(--white);
   color: var(--dark-green);
+}
+
+/* ✅ MOBILE LOGIN BUTTON (visible only on mobile) */
+.btn-login-mobile {
+  display: none; /* Hidden on desktop */
 }
 
 /* HERO NOTE */
@@ -324,11 +330,12 @@ nav a:hover {
 }
 
 /* Mobile */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .navbar {
     padding: 12px 20px;
     flex-wrap: wrap;
     gap: 10px;
+    position: relative;
   }
 
   .logo img {
@@ -336,81 +343,32 @@ nav a:hover {
     height: 50px;
   }
 
-  nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  nav a {
-    font-size: 13px;
-    margin: 0 6px;
-  }
-
-  .login-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-
-  .hero {
-    height: auto;
-    min-height: 100vh;
-    padding: 100px 20px 60px;
-  }
-
-  .hero h1 {
-    font-size: 28px;
-    letter-spacing: 1px;
-  }
-
-  .hero p {
-    font-size: 15px;
-  }
-
-  .btn {
-    padding: 12px 24px;
-    font-size: 14px;
-  }
-
-  .hero-note {
-    font-size: 11px;
-    padding: 8px 16px;
-  }
-
-  .login-box {
-    width: 100%;
-    padding: 30px 20px;
-    margin-top: 0;
-  }
-}
-/* HAMBURGER */
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 28px;
-  cursor: pointer;
-  padding: 5px 10px;
-  transition: 0.3s;
-}
-
-.hamburger:hover {
-  opacity: 0.7;
-}
-
-@media (max-width: 768px) {
-  .navbar {
-    flex-wrap: wrap;
-    padding: 15px 20px;
-    position: relative;
-  }
-
+  /* HAMBURGER */
   .hamburger {
     display: block;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: 0.3s;
   }
 
+  .hamburger:hover {
+    opacity: 0.7;
+  }
+  /* Hide hamburger on desktop */
+  .hamburger {
+    display: none !important;
+  }
+
+  /* Show hamburger on mobile */
+  @media (max-width: 768px) {
+    .hamburger {
+      display: block !important;
+    }
+  }
   #navMenu {
     display: none;
     width: 100%;
@@ -429,6 +387,7 @@ nav a:hover {
     padding: 12px 20px;
     font-size: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
   }
 
   #navMenu a::after {
@@ -439,5 +398,70 @@ nav a:hover {
     margin: 10px 20px !important;
     text-align: center;
     border-radius: 6px;
+    display: block;
+  }
+
+  /* ✅ Show Login button in hero section on mobile */
+  .btn-login-mobile {
+    display: inline-block;
+    background: white;
+    color: #0f3d2e !important;
+    padding: 14px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.3s;
+    border: 2px solid white;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-login-mobile:hover {
+    background: transparent;
+    color: white !important;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero {
+    height: auto;
+    min-height: 100vh;
+    padding: 100px 20px 60px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  .hero p {
+    font-size: 15px;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    width: 100%;
+    max-width: 250px;
+    text-align: center;
+  }
+
+  .hero-note {
+    font-size: 11px;
+    padding: 8px 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .login-box {
+    width: 100%;
+    padding: 30px 20px;
+    margin-top: 0;
   }
 }
