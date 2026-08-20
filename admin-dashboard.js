@@ -52,10 +52,8 @@ window.addEventListener("load", async () => {
 });
 
 async function loadAllData() {
-  // 1. Load users first
   await loadUsers();
 
-  // 2. Load settings from backend
   try {
     const settings = await apiRequest("/settings");
     pricePerM2 = settings.pricePerM2 || 10;
@@ -65,7 +63,6 @@ async function loadAllData() {
     document.getElementById("settingsTelegram").value = settings.telegram || "";
   } catch (e) {
     console.error("Failed to load settings from backend:", e);
-    // Fallback to localStorage if backend fails
     pricePerM2 = parseFloat(localStorage.getItem("pricePerM2")) || 10;
     document.getElementById("pricePerM2").value = pricePerM2;
     document.getElementById("settingsPhone").value =
@@ -76,7 +73,6 @@ async function loadAllData() {
       localStorage.getItem("bizTelegram") || "";
   }
 
-  // 3. Load all other data
   await Promise.all([
     loadPayments(),
     loadSpaces(),
@@ -85,7 +81,6 @@ async function loadAllData() {
     loadDashboard(),
   ]);
 
-  // 4. Render everything
   renderUsers();
   renderPayments();
 }
@@ -103,14 +98,12 @@ async function loadPayments() {
   try {
     const allPayments = await apiRequest("/payments/all");
 
-    // If no users exist, show no payments
     if (users.length === 0) {
       payments = [];
       renderPayments();
       return;
     }
 
-    // Only show payments from users that still exist
     const activeUsernames = users.map((u) => u.username);
     payments = allPayments.filter((p) => activeUsernames.includes(p.tenant));
 
@@ -126,7 +119,6 @@ async function loadSpaces() {
     renderSpaces();
   } catch (e) {
     console.error("Failed to load spaces:", e);
-    // ✅ Set spaces to empty array so it doesn't break
     spaces = [];
     renderSpaces();
   }
@@ -154,10 +146,8 @@ async function loadDashboard() {
   try {
     const stats = await apiRequest("/dashboard/stats");
 
-    // If no users exist, show empty state
     if (users.length === 0) {
       document.getElementById("totalUsers").textContent = "0";
-
       document.getElementById("overdueCount").textContent = "0";
       document.getElementById("dueThisMonth").textContent = "0";
 
@@ -170,7 +160,6 @@ async function loadDashboard() {
     }
 
     document.getElementById("totalUsers").textContent = stats.totalUsers;
-
     document.getElementById("overdueCount").textContent = stats.overdueCount;
     document.getElementById("dueThisMonth").textContent = stats.dueThisMonth;
 
@@ -179,7 +168,6 @@ async function loadDashboard() {
     if (!stats.recentPayments || stats.recentPayments.length === 0) {
       recentTable.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#999">No payments yet</td></tr>`;
     } else {
-      // Filter out payments from deleted users
       const activeUsernames = users.map((u) => u.username);
       const filteredPayments = stats.recentPayments.filter((p) =>
         activeUsernames.includes(p.tenant),
@@ -197,7 +185,7 @@ async function loadDashboard() {
           recentTable.innerHTML += `
             <tr>
               <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-              <td>$${parseFloat(p.amount).toFixed(2)}</td>
+              <td>${parseFloat(p.amount).toFixed(2)} Birr</td>
               <td>${p.datePaid}</td>
               <td>${p.nextDue}</td>
             </tr>
@@ -208,7 +196,6 @@ async function loadDashboard() {
 
     const overdueTable = document.getElementById("overdueTable");
     overdueTable.innerHTML = "";
-    // Filter out overdue tenants that don't exist anymore
     const activeUsernames2 = users.map((u) => u.username);
     const filteredOverdue = stats.overdueTenants
       ? stats.overdueTenants.filter((u) =>
@@ -224,7 +211,7 @@ async function loadDashboard() {
           <tr>
             <td>${u.username}</td>
             <td>${u.phone}</td>
-            <td>$${parseFloat(u.amount).toFixed(2)}</td>
+            <td>${parseFloat(u.amount).toFixed(2)} Birr</td>
             <td><span style="color:#e53e3e;font-weight:bold">${u.overdueDays === "Never paid" ? "Never paid" : u.overdueDays + " days"}</span></td>
           </tr>
         `;
@@ -330,7 +317,7 @@ function calcAmount() {
   const period = parseFloat(document.getElementById("period").value) || 0;
   const amount = space * pricePerM2 * period;
   document.getElementById("amount").value =
-    amount > 0 ? "$" + amount.toFixed(2) : "";
+    amount > 0 ? amount.toFixed(2) + " Birr" : "";
 }
 
 function toggleManualAmount() {
@@ -364,7 +351,7 @@ function calcSpacePrice() {
   const size = parseFloat(document.getElementById("spaceSize").value) || 0;
   const price = size * pricePerM2;
   document.getElementById("spacePrice").value =
-    price > 0 ? "$" + price.toFixed(2) + "/month" : "";
+    price > 0 ? price.toFixed(2) + " Birr/month" : "";
 }
 
 async function saveUser() {
@@ -414,7 +401,7 @@ async function saveUser() {
     .hasAttribute("readonly");
   const amountValue = document
     .getElementById("amount")
-    .value.replace("$", "")
+    .value.replace("Birr", "")
     .trim();
   const amount = manualAmount
     ? parseFloat(amountValue)
@@ -509,7 +496,7 @@ function renderUsers() {
 
       if (diff > 0) {
         countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
-        paidDisabled = true; // already paid, not due yet
+        paidDisabled = true;
       } else if (diff === 0) {
         countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
       } else {
@@ -546,7 +533,7 @@ function renderUsers() {
         <td>${user.password}</td>
         <td>${user.space} m2</td>
         <td>${user.period} month(s)</td>
-        <td>$${parseFloat(user.amount).toFixed(2)}</td>
+        <td>${parseFloat(user.amount).toFixed(2)} Birr</td>
         <td>${countdownHTML}</td>
         <td>${statusHTML}</td>
         <td>${actionsHTML}</td>
@@ -627,11 +614,9 @@ async function reactivate(id) {
       body: JSON.stringify({ status: "Active" }),
     });
 
-    // Try to delete the space if it exists
     const parts = user.username.split("/");
     const floorNumber = parts.length === 2 ? parseInt(parts[1]) : 0;
 
-    // Make sure spaces array exists
     const spaceToRemove =
       spaces && Array.isArray(spaces)
         ? spaces.find(
@@ -649,7 +634,6 @@ async function reactivate(id) {
         });
         console.log("✅ Space deleted:", spaceToRemove.id);
       } catch (spaceError) {
-        // Just log the error, don't show it to user
         console.warn("⚠️ Could not delete space:", spaceError.message);
       }
     }
@@ -675,7 +659,7 @@ function editUser(id) {
   document.getElementById("space").value = user.space;
   document.getElementById("period").value = user.period;
   document.getElementById("amount").value =
-    "$" + parseFloat(user.amount).toFixed(2);
+    parseFloat(user.amount).toFixed(2) + " Birr";
 }
 
 async function deleteUser(id) {
@@ -751,7 +735,7 @@ function renderPayments() {
       table.innerHTML += `
         <tr>
           <td>${p.tenant} ${isMovedOut ? '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;">Moved Out</span>' : ""}</td>
-          <td>$${parseFloat(p.amount).toFixed(2)}</td>
+          <td>${parseFloat(p.amount).toFixed(2)} Birr</td>
           <td>${p.space} m2</td>
           <td>${p.period} month(s)</td>
           <td>${p.datePaid}</td>
@@ -920,7 +904,7 @@ function renderSpaces() {
         <td>Floor ${s.floor}</td>
         <td>Room ${s.room}</td>
         <td>${s.size} m2</td>
-        <td>$${parseFloat(s.price).toFixed(2)}/month</td>
+        <td>${parseFloat(s.price).toFixed(2)} Birr/month</td>
         <td>${statusHTML}</td>
         <td>
           <button class="btn-edit" onclick="editSpace('${s.id}')">Edit</button>
@@ -939,7 +923,7 @@ function editSpace(id) {
   document.getElementById("spaceSize").value = s.size;
   document.getElementById("spaceStatus").value = s.status;
   document.getElementById("spacePrice").value =
-    "$" + parseFloat(s.price).toFixed(2) + "/month";
+    parseFloat(s.price).toFixed(2) + " Birr/month";
 }
 
 async function deleteSpace(id) {
@@ -1043,7 +1027,7 @@ function renderExpenses() {
           <td>${e.id}</td>
           <td>${e.name}</td>
           <td>${e.reason}</td>
-          <td>$${parseFloat(e.amount).toFixed(2)}</td>
+          <td>${parseFloat(e.amount).toFixed(2)} Birr</td>
           <td>${e.date}</td>
           <td>${periodLabel}</td>
           <td>${e.dueDate || "—"}</td>
@@ -1058,7 +1042,8 @@ function renderExpenses() {
   }
 
   const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-  document.getElementById("totalExpenses").textContent = "$" + total.toFixed(2);
+  document.getElementById("totalExpenses").textContent =
+    total.toFixed(2) + " Birr";
   document.getElementById("totalExpenseRecords").textContent = expenses.length;
 }
 
