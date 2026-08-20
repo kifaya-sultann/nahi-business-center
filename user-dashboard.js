@@ -138,10 +138,6 @@ function loadMySpace() {
       <span class="profile-field-label">📅 Period</span>
       <span class="profile-field-value">${currentUser.period || "—"} month(s)</span>
     </div>
-    <div class="profile-field">
-      <span class="profile-field-label">💰 Amount</span>
-      <span class="profile-field-value">$${parseFloat(currentUser.amount || 0).toFixed(2)}</span>
-    </div>
   `;
 }
 
