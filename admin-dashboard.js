@@ -500,16 +500,21 @@ function renderUsers() {
       .filter((p) => p.tenant === user.username)
       .pop();
     let countdownHTML = '<span style="color:#999">No payment yet</span>';
+    let paidDisabled = false;
+
     if (lastPayment) {
       const nextDue = new Date(lastPayment.nextDueRaw);
       const today = new Date();
       const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
-      if (diff > 0)
+
+      if (diff > 0) {
         countdownHTML = `<span style="color:#22c55e;font-weight:bold">⏳ ${diff} days left</span>`;
-      else if (diff === 0)
+        paidDisabled = true; // already paid, not due yet
+      } else if (diff === 0) {
         countdownHTML = `<span style="color:#f97316;font-weight:bold">⚠️ Due Today!</span>`;
-      else
+      } else {
         countdownHTML = `<span style="color:#e53e3e;font-weight:bold">🔴 Overdue by ${Math.abs(diff)} days</span>`;
+      }
     }
 
     const statusHTML =
@@ -520,20 +525,20 @@ function renderUsers() {
     const actionsHTML =
       user.status === "Moved Out"
         ? `
-        <button class="btn-paid" onclick="reactivate('${user.id}')">🔄 Reactivate</button>
-        <button class="btn-edit" onclick="editUser('${user.id}')">Edit</button>
-        <button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
+        <button class="btn-paid" onclick="reactivate('${user.id || user._id}')">🔄 Reactivate</button>
+        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
       `
         : `
-        <button class="btn-paid" onclick="markPaid('${user.id}')">✅ Paid</button>
-        <button class="btn-edit" onclick="editUser('${user.id}')">Edit</button>
-        <button class="btn-moveout" onclick="moveOut('${user.id}')">🚪 Move Out</button>
-        <button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
+        <button class="btn-paid" onclick="markPaid('${user.id || user._id}')" ${paidDisabled ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ""}>${paidDisabled ? "✅ Paid Up" : "✅ Paid"}</button>
+        <button class="btn-edit" onclick="editUser('${user.id || user._id}')">Edit</button>
+        <button class="btn-moveout" onclick="moveOut('${user.id || user._id}')">🚪 Move Out</button>
+        <button class="btn-delete" onclick="deleteUser('${user.id || user._id}')">Delete</button>
       `;
 
     table.innerHTML += `
       <tr style="${user.status === "Moved Out" ? "opacity:0.6;" : ""}">
-        <td>${user.id}</td>
+        <td>${user.id || user._id}</td>
         <td>${user.username}</td>
         <td>${user.email}</td>
         <td>${user.phone}</td>
