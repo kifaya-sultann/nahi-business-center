@@ -244,7 +244,7 @@
           <div class="cards" style="margin-bottom: 20px">
             <div class="card">
               <div class="card-label">💸 Total Expenses</div>
-              <div class="card-value" id="totalExpenses">$0</div>
+              <div class="card-value" id="totalExpenses">0 Birr</div>
             </div>
             <div class="card">
               <div class="card-label">📋 Total Records</div>
@@ -262,7 +262,7 @@
             <input
               type="number"
               id="expenseAmount"
-              placeholder="Amount ($)"
+              placeholder="Amount (Birr)"
               min="0"
             />
 
@@ -395,7 +395,7 @@
           <div class="settings-card">
             <h3>💰 Pricing</h3>
             <div class="settings-form">
-              <label>Price per m2 ($)</label>
+              <label>Price per m2 (Birr)</label>
               <input type="number" id="pricePerM2" min="1" />
               <button onclick="saveSettings()">Save</button>
               <p id="settingsMsg"></p>
