@@ -28,7 +28,6 @@ let userRequests = [];
 
 // Load on start
 window.addEventListener("load", async () => {
-  // Check if user is logged in
   const token = localStorage.getItem("token");
   const userData = JSON.parse(localStorage.getItem("currentUser") || "null");
 
@@ -38,26 +37,19 @@ window.addEventListener("load", async () => {
     return;
   }
 
-  // Set current user
   currentUser = userData;
 
-  // Load all data from backend
   await loadUserData();
   await loadUserPayments();
   await loadUserRequests();
   await loadSettings();
 
-  // Render everything
   loadMySpace();
   loadMyPayments();
   loadCountdown();
   loadTelegramLink();
   loadMyRequests();
 });
-
-// =====================
-// LOAD FROM BACKEND
-// =====================
 
 async function loadUserData() {
   try {
@@ -96,15 +88,10 @@ async function loadSettings() {
     }
   } catch (e) {
     console.error("Failed to load settings:", e);
-    // Fallback to localStorage
     const telegram = localStorage.getItem("bizTelegram") || "#";
     document.getElementById("telegramLink").href = telegram;
   }
 }
-
-// =====================
-// MY SPACE (Profile)
-// =====================
 
 function loadMySpace() {
   if (!currentUser) return;
@@ -141,10 +128,6 @@ function loadMySpace() {
   `;
 }
 
-// =====================
-// MY PAYMENTS
-// =====================
-
 function loadMyPayments() {
   const table = document.getElementById("userPaymentTable");
   table.innerHTML = "";
@@ -157,7 +140,7 @@ function loadMyPayments() {
   [...userPayments].reverse().forEach((p) => {
     table.innerHTML += `
       <tr>
-        <td>$${parseFloat(p.amount).toFixed(2)}</td>
+        <td>${parseFloat(p.amount).toFixed(2)} Birr</td>
         <td>${p.space || "—"} m2</td>
         <td>${p.period || "—"} month(s)</td>
         <td>${p.datePaid || "—"}</td>
@@ -167,10 +150,6 @@ function loadMyPayments() {
     `;
   });
 }
-
-// =====================
-// COUNTDOWN
-// =====================
 
 function loadCountdown() {
   const lastPayment =
@@ -210,18 +189,10 @@ function loadCountdown() {
   }
 }
 
-// =====================
-// TELEGRAM LINK
-// =====================
-
 function loadTelegramLink() {
   const link = localStorage.getItem("bizTelegram") || "#";
   document.getElementById("telegramLink").href = link;
 }
-
-// =====================
-// SUBMIT SERVICE REQUEST
-// =====================
 
 async function submitRequest() {
   const type = document.getElementById("reqType").value;
@@ -247,10 +218,6 @@ async function submitRequest() {
     alert("❌ " + e.message);
   }
 }
-
-// =====================
-// LOAD MY REQUESTS
-// =====================
 
 function loadMyRequests() {
   const table = document.getElementById("myRequestsTable");
@@ -280,10 +247,6 @@ function loadMyRequests() {
     `;
   });
 }
-
-// =====================
-// CHANGE PASSWORD
-// =====================
 
 async function changePassword() {
   const current = document.getElementById("currentPassword").value.trim();
