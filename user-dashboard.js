@@ -140,7 +140,7 @@ function loadMyPayments() {
   [...userPayments].reverse().forEach((p) => {
     table.innerHTML += `
       <tr>
-        <td>${parseFloat(p.amount).toFixed(2)} Birr</td>
+        
         <td>${p.space || "—"} m2</td>
         <td>${p.period || "—"} month(s)</td>
         <td>${p.datePaid || "—"}</td>
