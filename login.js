@@ -3,6 +3,12 @@ const form = document.getElementById("loginForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const btn = form.querySelector("button[type='submit']");
+
+  // Disable button and show loading
+  btn.disabled = true;
+  btn.textContent = "Logging in...";
+
   const username = document
     .getElementById("username")
     .value.trim()
@@ -11,6 +17,8 @@ form.addEventListener("submit", async (e) => {
 
   if (!username || !password) {
     alert("Please fill in all fields");
+    btn.disabled = false;
+    btn.textContent = "Login";
     return;
   }
 
@@ -19,6 +27,8 @@ form.addEventListener("submit", async (e) => {
 
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     alert("Invalid username format. Use: name/floor (e.g. ismael/03)");
+    btn.disabled = false;
+    btn.textContent = "Login";
     return;
   }
 
@@ -39,6 +49,9 @@ form.addEventListener("submit", async (e) => {
     localStorage.setItem("token", data.token);
     localStorage.setItem("loggedInUser", data.user.username);
     localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+    btn.textContent = "Redirecting...";
+
     // Redirect based on role
     if (role === "admin") {
       window.location.href = "admin-dashboard.html";
@@ -47,5 +60,7 @@ form.addEventListener("submit", async (e) => {
     }
   } catch (error) {
     alert("❌ " + error.message);
+    btn.disabled = false;
+    btn.textContent = "Login";
   }
 });
